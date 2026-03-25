@@ -1,0 +1,19 @@
+[project]
+name = "content-agent"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain>=0.3",
+    "langchain-openai>=0.3",   # OpenAI 规范（Kimi/DeepSeek/通义等均需要）
+    "langgraph>=0.2",
+    "tavily-python>=0.5",
+    "requests>=2.32",
+    "python-dotenv>=1.0",
+    "langchain-chroma>=0.2",
+    "fastapi>=0.115",
+    "uvicorn>=0.34",
+]
+
+[project.optional-dependencies]
+# 使用 Anthropic 规范（Claude 官方 API）时安装：uv add langchain-anthropic
+anthropic = ["langchain-anthropic>=0.3"]

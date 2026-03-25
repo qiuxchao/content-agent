@@ -1,0 +1,138 @@
+from dotenv import load_dotenv
+load_dotenv()  # 必须在所有 import 之前执行，确保环境变量已加载
+
+from langgraph.graph import StateGraph, END
+from agent.state import AgentState, Platform
+from agent.nodes.planner import planner_node
+from agent.nodes.researcher import researcher_node
+from agent.nodes.writer import writer_node
+from agent.nodes.critic import critic_node
+from agent.nodes.image_fetcher import image_fetcher_node
+from agent.memory import save as save_to_memory
+
+# ─────────────────────────────────────────────────────────
+# 构建 Graph
+#
+# 节点执行顺序：
+#   planner → researcher → writer → critic → 条件分支：
+#     - score ≥ 7 或 retry ≥ 2 → image_fetcher → END
+#     - score < 7 且 retry < 2  → 回到 researcher 重写
+#
+# ─────────────────────────────────────────────────────────
+
+
+def should_retry(state: AgentState) -> str:
+    """Critic 之后的条件分支：决定是否重写。"""
+    score = state.get("critic_score", 7)
+    retry_count = state.get("retry_count", 0)
+
+    if score < 7 and retry_count < 2:
+        print(f"\n⚠️  评分 {score}/10，不达标，准备第 {retry_count + 2} 次重写...")
+        return "retry"
+    else:
+        if score >= 7:
+            print(f"\n✅ 评分 {score}/10，质量达标，进入配图阶段")
+        else:
+            print(f"\n⚠️  评分 {score}/10，已达最大重试次数，跳过重写")
+        return "pass"
+
+
+def save_memory_node(state: AgentState) -> dict:
+    """文章生成完毕后，把素材存入向量库供未来检索。"""
+    print("\n[Memory] 保存素材到向量库...")
+    save_to_memory(
+        topic=state["topic"],
+        context=state["context"],
+        platform=state["platform"],
+    )
+    return {
+        "log": state.get("log", []) + ["💾 素材已存入向量库"],
+    }
+
+
+def increment_retry(state: AgentState) -> dict:
+    """重试计数 +1，在回到 researcher 之前执行。"""
+    return {
+        "retry_count": state.get("retry_count", 0) + 1,
+        "log": state.get("log", []) + ["🔄 初稿不达标，重新搜索并重写..."],
+    }
+
+
+workflow = StateGraph(AgentState)
+
+# 注册节点
+workflow.add_node("planner", planner_node)
+workflow.add_node("researcher", researcher_node)
+workflow.add_node("writer", writer_node)
+workflow.add_node("critic", critic_node)
+workflow.add_node("increment_retry", increment_retry)
+workflow.add_node("image_fetcher", image_fetcher_node)
+workflow.add_node("save_memory", save_memory_node)
+
+# 连接边
+workflow.set_entry_point("planner")
+workflow.add_edge("planner", "researcher")
+workflow.add_edge("researcher", "writer")
+workflow.add_edge("writer", "critic")
+
+# 条件分支：Critic 之后
+workflow.add_conditional_edges(
+    "critic",
+    should_retry,
+    {
+        "retry": "increment_retry",
+        "pass": "image_fetcher",
+    },
+)
+workflow.add_edge("increment_retry", "researcher")
+workflow.add_edge("image_fetcher", "save_memory")
+workflow.add_edge("save_memory", END)
+
+graph = workflow.compile()
+
+
+INITIAL_STATE = {
+    "keywords": [],
+    "raw_materials": [],
+    "context": "",
+    "draft": "",
+    "images": {},
+    "final_article": "",
+    "log": [],
+    "critic_score": 0,
+    "history_context": "",
+    "critic_feedback": "",
+    "retry_count": 0,
+}
+
+
+def run(topic: str, platform: Platform, direction: str = "tech") -> dict:
+    """
+    对外暴露的统一入口（阻塞式）。
+    返回 { "article": str, "log": list[str], "score": int }
+    """
+    result = graph.invoke({
+        "topic": topic,
+        "platform": platform,
+        "direction": direction,
+        **INITIAL_STATE,
+    })
+
+    return {
+        "article": result["final_article"],
+        "log": result["log"],
+        "score": result["critic_score"],
+    }
+
+
+def run_stream(topic: str, platform: Platform, direction: str = "tech"):
+    """
+    流式入口，yield 每个节点的输出。
+    每次 yield 一个 dict: { "node": str, "data": dict }
+    """
+    for event in graph.stream(
+        {"topic": topic, "platform": platform, "direction": direction, **INITIAL_STATE},
+        stream_mode="updates",
+    ):
+        for node_name, node_output in event.items():
+            yield {"node": node_name, "data": node_output}
