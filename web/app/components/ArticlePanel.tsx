@@ -4,6 +4,7 @@ import { App, Button, Tooltip } from "antd";
 import { CopyOutlined, CheckOutlined, SendOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { theme } from "../theme";
 
 const NODE_LABELS: Record<string, string> = {
@@ -159,6 +160,7 @@ export function ArticlePanel({ article, isRunning, currentNode, platform, onPubl
         style={{ animation: "fade-up 0.4s cubic-bezier(0.4,0,0.2,1) forwards" }}
       >
         <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
           components={{
             a: ({ href, children }) => (
               <a

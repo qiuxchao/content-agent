@@ -53,6 +53,29 @@ body {
   font-weight: 600;
   color: #2c2420;
 }
+.article-content table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 1rem 0;
+  font-size: 0.9375rem;
+  border: 1px solid #e8e2d9;
+}
+.article-content th,
+.article-content td {
+  border: 1px solid #e8e2d9 !important;
+  padding: 0.5rem 0.75rem !important;
+  text-align: left;
+  line-height: 1.7;
+  color: #4a3f35;
+}
+.article-content th {
+  background: #f3efe9 !important;
+  font-weight: 600;
+  color: #2c2420;
+}
+.article-content tr:nth-child(even) {
+  background: #faf8f5;
+}
 
 /* Pulse dot animation */
 @keyframes pulse-dot {

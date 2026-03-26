@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "antd";
+import { Button, Popconfirm } from "antd";
 import { PlusOutlined, DeleteOutlined, LoadingOutlined } from "@ant-design/icons";
 import { theme } from "../theme";
 import type { Platform } from "../page";
@@ -48,20 +48,24 @@ interface Props {
   onNewTopic: () => void;
   onSelectArticle: (topicId: number, article: ArticleItem) => void;
   onGenerateForPlatform: (topicId: number, topicTitle: string, direction: string, platform: Platform) => void;
+  onViewRunning: () => void; // 切回查看正在生成的主题
   refreshKey: number;
   activeTopicId: number | null;
   activeArticleId: number | null;
   isRunning: boolean;
+  runningTopicId: number | null; // 正在生成的主题 ID
   runningPlatform?: string; // 正在生成的平台
 }
 
 export function TopicList({
-  onNewTopic, onSelectArticle, onGenerateForPlatform, refreshKey,
-  activeTopicId, activeArticleId, isRunning, runningPlatform,
+  onNewTopic, onSelectArticle, onGenerateForPlatform, onViewRunning, refreshKey,
+  activeTopicId, activeArticleId, isRunning, runningTopicId, runningPlatform,
 }: Props) {
   const [topics, setTopics] = useState<TopicItem[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [topicDetail, setTopicDetail] = useState<TopicDetail | null>(null);
+  const [hoveredTopicId, setHoveredTopicId] = useState<number | null>(null);
+  const [hoveredArticleId, setHoveredArticleId] = useState<number | null>(null);
 
   // 加载主题列表
   useEffect(() => {
@@ -94,14 +98,21 @@ export function TopicList({
     setTopicDetail(data);
   };
 
-  const handleDelete = async (e: React.MouseEvent, topicId: number) => {
-    e.stopPropagation();
+  const handleDelete = async (topicId: number) => {
     await fetch(`http://localhost:8917/api/topics/${topicId}`, { method: "DELETE" });
     setTopics((prev) => prev.filter((t) => t.id !== topicId));
     if (expandedId === topicId) {
       setExpandedId(null);
       setTopicDetail(null);
     }
+  };
+
+  const handleDeleteArticle = async (articleId: number, topicId: number) => {
+    await fetch(`http://localhost:8917/api/articles/${articleId}`, { method: "DELETE" });
+    if (topicDetail && topicDetail.id === topicId) {
+      setTopicDetail({ ...topicDetail, articles: topicDetail.articles.filter((a) => a.id !== articleId) });
+    }
+    setTopics((prev) => prev.map((t) => t.id === topicId ? { ...t, article_count: t.article_count - 1 } : t));
   };
 
   const ALL_PLATFORMS: Platform[] = ["wechat", "xiaohongshu", "zhihu"];
@@ -146,13 +157,15 @@ export function TopicList({
             {topics.map((t) => {
               const isExpanded = expandedId === t.id;
               const isActive = activeTopicId === t.id;
-              const isGeneratingHere = isRunning && activeTopicId === t.id;
+              const isGeneratingHere = isRunning && runningTopicId === t.id;
 
               return (
                 <div key={t.id}>
                   {/* Topic Row */}
                   <div
-                    onClick={() => handleExpand(t.id)}
+                    onClick={() => { isGeneratingHere ? onViewRunning() : handleExpand(t.id); }}
+                    onMouseEnter={() => setHoveredTopicId(t.id)}
+                    onMouseLeave={() => setHoveredTopicId(null)}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -182,16 +195,26 @@ export function TopicList({
                         {isGeneratingHere && <span style={{ color: theme.amber, marginLeft: 6 }}>生成中...</span>}
                       </div>
                     </div>
-                    {!isGeneratingHere && (
-                      <button
-                        onClick={(e) => handleDelete(e, t.id)}
-                        style={{
-                          background: "none", border: "none", cursor: "pointer",
-                          color: theme.stone, padding: 4, opacity: 0.5, fontSize: 12,
-                        }}
+                    {!isGeneratingHere && hoveredTopicId === t.id && (
+                      <Popconfirm
+                        title="删除主题"
+                        description="将同时删除该主题下所有文章"
+                        onConfirm={() => handleDelete(t.id)}
+                        onPopupClick={(e) => e.stopPropagation()}
+                        okText="删除"
+                        okButtonProps={{ danger: true }}
+                        cancelText="取消"
                       >
-                        <DeleteOutlined />
-                      </button>
+                        <button
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            background: "none", border: "none", cursor: "pointer",
+                            padding: 4, fontSize: 12,
+                          }}
+                        >
+                          <DeleteOutlined style={{ color: theme.error }} />
+                        </button>
+                      </Popconfirm>
                     )}
                   </div>
 
@@ -205,6 +228,8 @@ export function TopicList({
                           <div
                             key={a.id}
                             onClick={() => onSelectArticle(t.id, a)}
+                            onMouseEnter={() => setHoveredArticleId(a.id)}
+                            onMouseLeave={() => setHoveredArticleId(null)}
                             style={{
                               display: "flex",
                               alignItems: "center",
@@ -234,17 +259,42 @@ export function TopicList({
                             {a.status === "published" && (
                               <span style={{ fontSize: 10, color: theme.success }}>已发布</span>
                             )}
+                            {hoveredArticleId === a.id && (
+                              <Popconfirm
+                                title="删除文章"
+                                description={`确定删除这篇${PLATFORM_LABELS[a.platform] || a.platform}文章吗？`}
+                                onConfirm={() => handleDeleteArticle(a.id, t.id)}
+                                onPopupClick={(e) => e.stopPropagation()}
+                                okText="删除"
+                                okButtonProps={{ danger: true }}
+                                cancelText="取消"
+                              >
+                                <button
+                                  onClick={(e) => e.stopPropagation()}
+                                  style={{
+                                    background: "none", border: "none", cursor: "pointer",
+                                    padding: 2, fontSize: 11, flexShrink: 0,
+                                  }}
+                                >
+                                  <DeleteOutlined style={{ color: theme.error }} />
+                                </button>
+                              </Popconfirm>
+                            )}
                           </div>
                         );
                       })}
 
-                      {/* 正在生成的平台 */}
+                      {/* 正在生成的平台 — 点击可切回查看进度 */}
                       {isGeneratingHere && runningPlatform && !topicDetail.articles.some(a => a.platform === runningPlatform) && (
-                        <div style={{
-                          display: "flex", alignItems: "center", gap: 8,
-                          padding: "8px 10px", borderRadius: 8, marginBottom: 4,
-                          background: theme.amberSoft, border: `1px solid ${theme.amber}`,
-                        }}>
+                        <div
+                          onClick={onViewRunning}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 8,
+                            padding: "8px 10px", borderRadius: 8, marginBottom: 4,
+                            background: theme.amberSoft, border: `1px solid ${theme.amber}`,
+                            cursor: "pointer",
+                          }}
+                        >
                           <LoadingOutlined style={{ fontSize: 12, color: theme.amber }} />
                           <span style={{ fontSize: 12, color: theme.amber, fontWeight: 500 }}>
                             正在生成{PLATFORM_LABELS[runningPlatform]}版本...
