@@ -12,6 +12,11 @@ dependencies = [
     "langchain-chroma>=0.2",
     "fastapi>=0.115",
     "uvicorn>=0.34",
+    "markdown>=3.7",
+    "css-inline>=0.14",
+    "Pygments>=2.18",
+    "python-multipart>=0.0.18",
+    "Pillow>=10.0",
 ]
 
 [project.optional-dependencies]

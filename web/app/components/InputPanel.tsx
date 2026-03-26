@@ -50,10 +50,11 @@ const PLATFORMS: { value: Platform; label: string; desc: string; icon: React.Rea
 interface Props {
   onGenerate: (topic: string, platform: Platform, direction: string) => void;
   onStop: () => void;
+  onBack?: () => void;
   isRunning: boolean;
 }
 
-export function InputPanel({ onGenerate, onStop, isRunning }: Props) {
+export function InputPanel({ onGenerate, onStop, onBack, isRunning }: Props) {
   const [topic, setTopic] = useState("");
   const [platform, setPlatform] = useState<Platform>("wechat");
   const [directionKey, setDirectionKey] = useState("tech");
@@ -98,14 +99,19 @@ export function InputPanel({ onGenerate, onStop, isRunning }: Props) {
 
   return (
     <div style={{ padding: "28px 24px 24px", display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Brand */}
-      <div style={{ marginBottom: 32 }}>
-        <div style={{ fontSize: 20, fontWeight: 700, color: theme.ink, letterSpacing: "-0.03em" }}>
-          Content Agent
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+        <div style={{ fontSize: 16, fontWeight: 600, color: theme.ink }}>
+          新建主题
         </div>
-        <div style={{ fontSize: 13, color: theme.bark, marginTop: 5, letterSpacing: "0.01em" }}>
-          输入主题，自动生成多平台文章
-        </div>
+        {onBack && (
+          <button
+            onClick={onBack}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: theme.bark }}
+          >
+            ← 返回
+          </button>
+        )}
       </div>
 
       {/* Scrollable form area */}

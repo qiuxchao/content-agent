@@ -1,0 +1,148 @@
+/* 微信公众号极简主题 —— 黑白为主，科技感 */
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.85;
+  color: #2b2b2b;
+  padding: 0;
+  margin: 0;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #000;
+  margin: 30px 0 16px;
+  line-height: 1.35;
+  letter-spacing: -0.5px;
+}
+
+h2 {
+  font-size: 19px;
+  font-weight: 700;
+  color: #000;
+  margin: 26px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid #000;
+  line-height: 1.4;
+  letter-spacing: -0.3px;
+}
+
+h3 {
+  font-size: 17px;
+  font-weight: 600;
+  color: #000;
+  margin: 22px 0 8px;
+  line-height: 1.4;
+}
+
+p {
+  margin: 12px 0;
+  color: #2b2b2b;
+  font-size: 16px;
+  line-height: 1.85;
+}
+
+strong {
+  font-weight: 700;
+  color: #000;
+}
+
+em {
+  font-style: italic;
+  color: #555;
+}
+
+a {
+  color: #000;
+  text-decoration: underline;
+}
+
+blockquote {
+  margin: 16px 0;
+  padding: 10px 16px;
+  background: #f8f8f8;
+  border-left: 3px solid #000;
+  color: #555;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+blockquote p {
+  margin: 4px 0;
+  color: #555;
+  font-size: 15px;
+}
+
+ul, ol {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+li {
+  margin: 5px 0;
+  color: #2b2b2b;
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+code {
+  font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
+  background: #f0f0f0;
+  padding: 2px 5px;
+  border-radius: 2px;
+  font-size: 14px;
+  color: #333;
+}
+
+pre {
+  margin: 16px 0;
+  padding: 16px;
+  background: #1e1e1e;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  color: #d4d4d4;
+  font-size: 14px;
+  border-radius: 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 15px;
+}
+
+th {
+  background: #f0f0f0;
+  font-weight: 700;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  color: #000;
+}
+
+td {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  color: #2b2b2b;
+}
+
+img {
+  max-width: 100%;
+  border-radius: 4px;
+  margin: 16px 0;
+  display: block;
+}
+
+hr {
+  border: none;
+  border-top: 2px solid #000;
+  margin: 28px 0;
+}

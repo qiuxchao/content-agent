@@ -1,0 +1,149 @@
+/* 微信公众号优雅主题 —— 暖色调，适合深度长文 */
+
+body {
+  font-family: "Georgia", "Songti SC", "SimSun", serif;
+  font-size: 16px;
+  line-height: 2;
+  color: #2c2420;
+  padding: 0;
+  margin: 0;
+}
+
+h1 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 32px 0 16px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #8b572a;
+  margin: 28px 0 12px;
+  padding-left: 12px;
+  border-left: 4px solid #c47a2a;
+  line-height: 1.4;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4a3f35;
+  margin: 22px 0 10px;
+  line-height: 1.4;
+}
+
+p {
+  margin: 14px 0;
+  color: #2c2420;
+  font-size: 16px;
+  line-height: 2;
+  text-align: justify;
+}
+
+strong {
+  font-weight: 700;
+  color: #8b572a;
+}
+
+em {
+  font-style: italic;
+  color: #6b5b4f;
+}
+
+a {
+  color: #8b572a;
+  text-decoration: none;
+  border-bottom: 1px dashed #c47a2a;
+}
+
+blockquote {
+  margin: 18px 0;
+  padding: 14px 18px;
+  background: #faf6f0;
+  border-left: 4px solid #c47a2a;
+  color: #6b5b4f;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+blockquote p {
+  margin: 4px 0;
+  color: #6b5b4f;
+  font-size: 15px;
+}
+
+ul, ol {
+  margin: 14px 0;
+  padding-left: 24px;
+}
+
+li {
+  margin: 8px 0;
+  color: #2c2420;
+  font-size: 16px;
+  line-height: 1.9;
+}
+
+code {
+  font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
+  background: #faf6f0;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 14px;
+  color: #8b572a;
+}
+
+pre {
+  margin: 18px 0;
+  padding: 16px;
+  background: #2c2420;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  color: #d4c4b0;
+  font-size: 14px;
+  border-radius: 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  font-size: 15px;
+}
+
+th {
+  background: #faf6f0;
+  font-weight: 600;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #e8e2d9;
+  color: #4a3f35;
+}
+
+td {
+  padding: 10px 12px;
+  border: 1px solid #e8e2d9;
+  color: #2c2420;
+}
+
+img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 18px 0;
+  display: block;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #e8e2d9;
+  margin: 28px 0;
+}

@@ -1,0 +1,68 @@
+/* 微信公众号优雅主题 —— 圆角阴影，视觉层次丰富 */
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 16px;
+  line-height: 1.9;
+  color: #333;
+  padding: 0;
+  margin: 0;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 28px 0 16px;
+  padding: 0.5em 1em;
+  border-bottom: 2px solid #576b95;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+h2 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  background: #576b95;
+  padding: 0.3em 1em;
+  margin: 24px 0 12px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin: 20px 0 10px;
+  padding-left: 12px;
+  border-left: 4px solid #576b95;
+  border-bottom: 1px dashed #576b95;
+}
+
+p { margin: 12px 0; font-size: 16px; line-height: 1.9; color: #333; }
+strong { font-weight: 700; color: #1a1a1a; }
+em { font-style: italic; color: rgba(0,0,0,0.6); }
+a { color: #576b95; text-decoration: none; }
+
+blockquote {
+  margin: 16px 0; padding: 1em 1em 1em 2em;
+  border-left: 4px solid #576b95; border-radius: 6px;
+  color: rgba(0,0,0,0.6); font-style: italic;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+blockquote p { margin: 4px 0; color: rgba(0,0,0,0.6); }
+
+ul, ol { margin: 12px 0; padding-left: 24px; }
+li { margin: 6px 0; font-size: 16px; line-height: 1.8; }
+
+code { font-family: "SF Mono", Menlo, Consolas, monospace; background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 14px; color: #c7254e; }
+pre { margin: 16px 0; padding: 16px; background: #282c34; border-radius: 6px; overflow-x: auto; box-shadow: inset 0 0 10px rgba(0,0,0,0.05); }
+pre code { background: none; padding: 0; color: #abb2bf; font-size: 14px; border-radius: 0; }
+
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 15px; }
+th { background: #576b95; color: #fff; font-weight: 600; text-align: left; padding: 10px 12px; border: 1px solid #4a5d80; }
+td { padding: 10px 12px; border: 1px solid #ddd; }
+
+img { max-width: 100%; border-radius: 8px; margin: 16px 0; display: block; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+hr { border: none; border-top: 1px solid #eee; margin: 24px 0; }

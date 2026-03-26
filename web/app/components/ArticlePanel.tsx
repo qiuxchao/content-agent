@@ -1,7 +1,7 @@
 "use client";
 
 import { App, Button, Tooltip } from "antd";
-import { CopyOutlined, CheckOutlined } from "@ant-design/icons";
+import { CopyOutlined, CheckOutlined, SendOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { theme } from "../theme";
@@ -20,9 +20,14 @@ interface Props {
   article: string;
   isRunning: boolean;
   currentNode: string;
+  platform?: string;
+  onPublish?: () => void;
 }
 
-export function ArticlePanel({ article, isRunning, currentNode }: Props) {
+// 只有公众号支持 API 发布，小红书和知乎只能复制
+const PUBLISH_PLATFORMS = ["wechat"];
+
+export function ArticlePanel({ article, isRunning, currentNode, platform, onPublish }: Props) {
   const { message } = App.useApp();
   const [copied, setCopied] = useState(false);
 
@@ -115,28 +120,60 @@ export function ArticlePanel({ article, isRunning, currentNode }: Props) {
           zIndex: 10,
         }}
       >
-        <Tooltip title={copied ? "已复制" : "复制全文"}>
-          <Button
-            icon={copied ? <CheckOutlined /> : <CopyOutlined />}
-            onClick={handleCopy}
-            size="small"
-            style={{
-              borderRadius: 8,
-              borderColor: copied ? theme.success : theme.sand,
-              color: copied ? theme.success : theme.bark,
-              background: copied ? theme.successSoft : theme.cream,
-            }}
-          >
-            {copied ? "已复制" : "复制"}
-          </Button>
-        </Tooltip>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Tooltip title={copied ? "已复制" : "复制全文"}>
+            <Button
+              icon={copied ? <CheckOutlined /> : <CopyOutlined />}
+              onClick={handleCopy}
+              size="small"
+              style={{
+                borderRadius: 8,
+                borderColor: copied ? theme.success : theme.sand,
+                color: copied ? theme.success : theme.bark,
+                background: copied ? theme.successSoft : theme.cream,
+              }}
+            >
+              {copied ? "已复制" : "复制"}
+            </Button>
+          </Tooltip>
+          {onPublish && !isRunning && platform && PUBLISH_PLATFORMS.includes(platform) && (
+            <Button
+              icon={<SendOutlined />}
+              onClick={onPublish}
+              size="small"
+              style={{
+                borderRadius: 8,
+                borderColor: theme.amber,
+                color: theme.amber,
+                background: theme.amberSoft,
+              }}
+            >
+              发布
+            </Button>
+          )}
+        </div>
       </div>
 
       <div
         className="article-content"
         style={{ animation: "fade-up 0.4s cubic-bezier(0.4,0,0.2,1) forwards" }}
       >
-        <ReactMarkdown>{article}</ReactMarkdown>
+        <ReactMarkdown
+          components={{
+            a: ({ href, children }) => (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: theme.amber, textDecoration: "underline", textUnderlineOffset: 3 }}
+              >
+                {children}
+              </a>
+            ),
+          }}
+        >
+          {article}
+        </ReactMarkdown>
       </div>
 
       {isRunning && (
