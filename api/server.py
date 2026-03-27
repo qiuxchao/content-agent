@@ -6,20 +6,24 @@ FastAPI 服务 —— SSE 流式生成 + 文章管理 CRUD + 微信发布
 
 import os
 import json
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
 from fastapi import UploadFile, File, Form
 
+from fastapi.responses import JSONResponse
 from agent.graph import run_stream
 from agent.state import Platform
+from agent.config import get_config
+from agent.llm import reset_llm_cache
 from agent.prompts.templates import DIRECTION_PRESETS, DEFAULT_DIRECTION
 from agent.publish.wechat_api import check_configured as wechat_configured, publish_article
 from agent.publish.wechat_html import md_to_wechat_html, AVAILABLE_THEMES
 from agent.publish.cover_prompt import generate_cover_prompt
 from agent import db
+from agent.tools.image_gen import STYLE_PRESETS, PLATFORM_STYLES
 
 app = FastAPI(title="Content Agent API")
 
@@ -38,11 +42,26 @@ class GenerateRequest(BaseModel):
     platform: Platform
     direction: str = "tech"
     topic_id: Optional[int] = None  # 传了就关联已有主题，不传就新建
+    style: Optional[str] = None  # 图片风格
+
+
+def _check_config() -> str | None:
+    """检查必要配置，返回缺失项的提示文案，都配了则返回 None"""
+    if not get_config("LLM_API_KEY"):
+        return "请先配置大语言模型的 API 密钥（点击左上角 ⚙ 设置）"
+    if not get_config("TAVILY_API_KEY"):
+        return "请先配置 Tavily 搜索密钥（点击左上角 ⚙ 设置，免费注册: app.tavily.com）"
+    return None
 
 
 @app.post("/api/generate")
 async def generate(req: GenerateRequest):
     """SSE 流式生成文章，自动保存到数据库"""
+
+    # 预检查必要配置
+    missing = _check_config()
+    if missing:
+        return JSONResponse(status_code=422, content={"error": missing})
 
     # 创建或复用主题
     if req.topic_id:
@@ -54,7 +73,7 @@ async def generate(req: GenerateRequest):
 
     def event_stream():
         last_state = {}
-        for event in run_stream(req.topic, req.platform, req.direction):
+        for event in run_stream(req.topic, req.platform, req.direction, image_style=req.style):
             node = event["node"]
             data = event["data"]
             last_state.update(data)
@@ -121,7 +140,7 @@ async def list_topics(limit: int = 50, offset: int = 0):
 async def get_topic(topic_id: int):
     topic = db.get_topic(topic_id)
     if not topic:
-        return {"error": "not found"}
+        raise HTTPException(status_code=404, detail="topic not found")
     return topic
 
 
@@ -147,7 +166,7 @@ async def update_article(article_id: int, req: ArticleUpdateRequest):
         status=req.status,
     )
     if not result:
-        return {"error": "not found"}
+        raise HTTPException(status_code=404, detail="article not found")
     return result
 
 
@@ -239,6 +258,77 @@ async def wechat_publish(
             os.unlink(cover_path)
 
 
+# ─── 图片上传 ─────────────────────────────────────────────
+
+@app.post("/api/upload-image")
+async def upload_image(file: UploadFile = File(...)):
+    """上传图片到 data/images/，返回可访问的 URL"""
+    import time
+    ext = os.path.splitext(file.filename or "img.png")[1] or ".png"
+    filename = f"upload_{int(time.time() * 1000)}{ext}"
+    filepath = os.path.join("data/images", filename)
+
+    content = await file.read()
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    return {"url": f"http://localhost:8917/api/images/{filename}"}
+
+
+# ─── 配置管理 ───────────────────────────────────────────
+
+# 前端设置页需要读取的配置 key 列表
+_SETTING_KEYS = [
+    "LLM_PROVIDER", "LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL",
+    "TAVILY_API_KEY",
+    "IMAGE_PROVIDER", "UNSPLASH_ACCESS_KEY", "IMAGE_API_KEY",
+    "IMAGE_BASE_URL", "IMAGE_MODEL", "IMAGE_STYLE", "IMAGE_CONCURRENT",
+    "WECHAT_APP_ID", "WECHAT_APP_SECRET",
+]
+
+
+@app.get("/api/settings")
+async def get_settings():
+    """获取所有配置（env 优先，合并 DB），附带风格预设列表"""
+    db_settings = db.get_settings()
+    # 合并：env 覆盖 DB，前端看到的是最终生效值
+    merged: dict[str, str] = {}
+    for key in _SETTING_KEYS:
+        env_val = os.getenv(key, "").strip()
+        db_val = db_settings.get(key, "")
+        merged[key] = env_val or db_val
+    return {
+        "settings": merged,
+        "image_styles": [
+            {"key": k, "label": v["label"]} for k, v in STYLE_PRESETS.items()
+        ],
+        "platform_default_styles": PLATFORM_STYLES,
+    }
+
+
+class SettingsUpdateRequest(BaseModel):
+    settings: dict[str, str]
+
+
+@app.put("/api/settings")
+async def update_settings(req: SettingsUpdateRequest):
+    """批量更新配置"""
+    db.save_settings(req.settings)
+    # 配置变更后使 LLM 缓存失效，下次生成时重新读取新配置
+    reset_llm_cache()
+    # Tavily client 同样重置，让新 key 生效
+    import agent.tools.search as _search_mod
+    _search_mod._client = None
+    return {"success": True}
+
+
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+# ─── 静态文件（放在最后，避免拦截 API 路由）─────────────
+
+os.makedirs("data/images", exist_ok=True)
+from fastapi.staticfiles import StaticFiles  # noqa: E402
+app.mount("/api/images", StaticFiles(directory="data/images"), name="images")
