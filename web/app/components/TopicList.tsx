@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button, Popconfirm } from "antd";
-import { PlusOutlined, DeleteOutlined, LoadingOutlined } from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, LoadingOutlined, SettingOutlined } from "@ant-design/icons";
 import { theme } from "../theme";
 import type { Platform } from "../page";
 
@@ -55,11 +55,12 @@ interface Props {
   isRunning: boolean;
   runningTopicId: number | null; // 正在生成的主题 ID
   runningPlatform?: string; // 正在生成的平台
+  onSettings?: () => void;
 }
 
 export function TopicList({
   onNewTopic, onSelectArticle, onGenerateForPlatform, onViewRunning, refreshKey,
-  activeTopicId, activeArticleId, isRunning, runningTopicId, runningPlatform,
+  activeTopicId, activeArticleId, isRunning, runningTopicId, runningPlatform, onSettings,
 }: Props) {
   const [topics, setTopics] = useState<TopicItem[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -135,13 +136,23 @@ export function TopicList({
             AI 内容生成 Agent
           </div>
         </div>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={onNewTopic}
-          size="small"
-          style={{ borderRadius: 8, background: theme.amber, borderColor: theme.amber }}
-        />
+        <div style={{ display: "flex", gap: 6 }}>
+          {onSettings && (
+            <Button
+              icon={<SettingOutlined />}
+              onClick={onSettings}
+              size="small"
+              style={{ borderRadius: 8, color: theme.bark, borderColor: theme.sand }}
+            />
+          )}
+          <Button
+            type="primary"
+            icon={<PlusOutlined />}
+            onClick={onNewTopic}
+            size="small"
+            style={{ borderRadius: 8, background: theme.amber, borderColor: theme.amber }}
+          />
+        </div>
       </div>
 
       {/* Topic List */}

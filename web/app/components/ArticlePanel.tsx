@@ -1,8 +1,8 @@
 "use client";
 
-import { App, Button, Tooltip } from "antd";
-import { CopyOutlined, CheckOutlined, SendOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { App, Button, Tooltip, Upload } from "antd";
+import { CopyOutlined, CheckOutlined, SendOutlined, UploadOutlined, PictureOutlined } from "@ant-design/icons";
+import { useState, useRef, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { theme } from "../theme";
@@ -23,14 +23,49 @@ interface Props {
   currentNode: string;
   platform?: string;
   onPublish?: () => void;
+  onArticleUpdate?: (newArticle: string) => void;
 }
 
 // 只有公众号支持 API 发布，小红书和知乎只能复制
 const PUBLISH_PLATFORMS = ["wechat"];
 
-export function ArticlePanel({ article, isRunning, currentNode, platform, onPublish }: Props) {
+export function ArticlePanel({ article, isRunning, currentNode, platform, onPublish, onArticleUpdate }: Props) {
   const { message } = App.useApp();
   const [copied, setCopied] = useState(false);
+  const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null);
+  const [uploadingPrompt, setUploadingPrompt] = useState<string | null>(null);
+
+  const handleCopyPrompt = useCallback(async (prompt: string) => {
+    try {
+      await navigator.clipboard.writeText(prompt);
+      setCopiedPrompt(prompt);
+      message.success("提示词已复制，可粘贴到 Gemini 等平台生图");
+      setTimeout(() => setCopiedPrompt(null), 2000);
+    } catch {
+      message.error("复制失败");
+    }
+  }, [message]);
+
+  const handleUploadImage = useCallback(async (prompt: string, file: File) => {
+    setUploadingPrompt(prompt);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("http://localhost:8917/api/upload-image", { method: "POST", body: form });
+      if (!res.ok) throw new Error("上传失败");
+      const { url } = await res.json();
+      // 替换占位符为真实图片
+      const placeholder = `![${prompt}](prompt-placeholder)`;
+      const replacement = `![illustration](${url})`;
+      const newArticle = article.replace(placeholder, replacement);
+      onArticleUpdate?.(newArticle);
+      message.success("图片已上传");
+    } catch {
+      message.error("上传失败，请重试");
+    } finally {
+      setUploadingPrompt(null);
+    }
+  }, [article, onArticleUpdate, message]);
 
   const handleCopy = async () => {
     try {
@@ -172,6 +207,86 @@ export function ArticlePanel({ article, isRunning, currentNode, platform, onPubl
                 {children}
               </a>
             ),
+            img: ({ src, alt }) => {
+              if (src === "prompt-placeholder" && alt) {
+                const prompt = alt;
+                const isCopied = copiedPrompt === prompt;
+                const isUploading = uploadingPrompt === prompt;
+                return (
+                  <div
+                    style={{
+                      margin: "16px 0",
+                      padding: "16px 20px",
+                      borderRadius: 12,
+                      border: `1.5px dashed ${theme.sand}`,
+                      background: theme.creamDeep,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <PictureOutlined style={{ fontSize: 16, color: theme.amber }} />
+                      <span style={{ fontSize: 13, fontWeight: 600, color: theme.espresso }}>
+                        配图占位 — 可手动上传
+                      </span>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: theme.bark,
+                        lineHeight: 1.6,
+                        background: theme.cream,
+                        padding: "8px 12px",
+                        borderRadius: 8,
+                        marginBottom: 12,
+                        maxHeight: 80,
+                        overflow: "auto",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {prompt}
+                    </div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <Button
+                        size="small"
+                        icon={isCopied ? <CheckOutlined /> : <CopyOutlined />}
+                        onClick={() => handleCopyPrompt(prompt)}
+                        style={{
+                          borderRadius: 6,
+                          fontSize: 12,
+                          borderColor: isCopied ? theme.success : theme.sand,
+                          color: isCopied ? theme.success : theme.bark,
+                        }}
+                      >
+                        {isCopied ? "已复制" : "复制提示词"}
+                      </Button>
+                      <Upload
+                        accept="image/*"
+                        showUploadList={false}
+                        beforeUpload={(file) => {
+                          handleUploadImage(prompt, file);
+                          return false;
+                        }}
+                      >
+                        <Button
+                          size="small"
+                          icon={<UploadOutlined />}
+                          loading={isUploading}
+                          style={{
+                            borderRadius: 6,
+                            fontSize: 12,
+                            borderColor: theme.amber,
+                            color: theme.amber,
+                          }}
+                        >
+                          上传图片
+                        </Button>
+                      </Upload>
+                    </div>
+                  </div>
+                );
+              }
+              // 普通图片
+              return <img src={src} alt={alt} style={{ maxWidth: "100%", borderRadius: 8 }} />;
+            },
           }}
         >
           {article}

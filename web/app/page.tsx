@@ -6,6 +6,7 @@ import { ArticlePanel } from "./components/ArticlePanel";
 import { StatusPanel } from "./components/StatusPanel";
 import { PublishPanel } from "./components/PublishPanel";
 import { TopicList } from "./components/TopicList";
+import { SettingsModal } from "./components/SettingsModal";
 import { theme } from "./theme";
 
 export type Platform = "wechat" | "xiaohongshu" | "zhihu";
@@ -67,9 +68,10 @@ export default function Home() {
   const [runningTopicId, setRunningTopicId] = useState<number | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [hasTopics, setHasTopics] = useState<boolean | null>(null); // null = loading
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleGenerate = useCallback(
-    async (topic: string, platform: Platform, direction: string, topicId?: number) => {
+    async (topic: string, platform: Platform, direction: string, topicId?: number, style?: string) => {
       viewingHistoryRef.current = false;
       setViewingHistory(false);
       genStateRef.current = { article: "", score: 0, logs: [], keywords: [], currentNode: "planner", topicId: topicId ?? null, articleId: null, platform };
@@ -90,6 +92,7 @@ export default function Home() {
 
       const body: Record<string, unknown> = { topic, platform, direction };
       if (topicId) body.topic_id = topicId;
+      if (style) body.style = style;
 
       try {
         const res = await fetch("http://localhost:8917/api/generate", {
@@ -99,7 +102,11 @@ export default function Home() {
           signal: abortRef.current.signal,
         });
 
-        if (!res.ok || !res.body) throw new Error(`API 错误: ${res.status}`);
+        if (!res.ok) {
+          const errData = await res.json().catch(() => null);
+          throw new Error(errData?.error || `API 错误: ${res.status}`);
+        }
+        if (!res.body) throw new Error("响应无数据");
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -141,7 +148,15 @@ export default function Home() {
               } else {
                 // 始终更新 ref 缓存
                 gs.currentNode = event.node;
-                if (event.data.topic_id) { gs.topicId = event.data.topic_id; setRunningTopicId(event.data.topic_id); }
+                if (event.data.topic_id) {
+                  const isNewTopic = gs.topicId !== event.data.topic_id;
+                  gs.topicId = event.data.topic_id;
+                  setRunningTopicId(event.data.topic_id);
+                  if (isNewTopic) {
+                    setCurrentTopicId(event.data.topic_id);
+                    setRefreshKey((k) => k + 1);
+                  }
+                }
                 if (event.data.log?.length) gs.logs = [...gs.logs, ...event.data.log];
                 if (event.data.keywords?.length) gs.keywords = event.data.keywords;
                 if (event.data.final_article) gs.article = event.data.final_article;
@@ -176,6 +191,21 @@ export default function Home() {
     setIsRunning(false);
     setCurrentNode("");
   }, []);
+
+  // 文章内容更新（图片上传替换占位符等）
+  const handleArticleUpdate = useCallback((newArticle: string) => {
+    setArticle(newArticle);
+    // 同步更新 genStateRef
+    genStateRef.current.article = newArticle;
+    // 如果已保存到数据库，同步更新
+    if (currentArticleId) {
+      fetch(`http://localhost:8917/api/articles/${currentArticleId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content_md: newArticle }),
+      }).catch(() => {});
+    }
+  }, [currentArticleId]);
 
   // 从历史列表选择已有文章
   const handleSelectArticle = useCallback((topicId: number, articleItem: { id: number; content_md: string; score: number; platform: string }) => {
@@ -277,10 +307,11 @@ export default function Home() {
             isRunning={isRunning}
             runningTopicId={runningTopicId}
             runningPlatform={runningPlatform}
+            onSettings={() => setSettingsOpen(true)}
           />
         ) : (
           <InputPanel
-            onGenerate={(topic, platform, direction) => handleGenerate(topic, platform, direction)}
+            onGenerate={(topic, platform, direction, style) => handleGenerate(topic, platform, direction, undefined, style)}
             onStop={handleStop}
             onBack={hasTopics ? () => setLeftPanel("topics") : undefined}
             isRunning={isRunning}
@@ -295,7 +326,8 @@ export default function Home() {
           isRunning={effectiveRunning}
           currentNode={currentNode}
           platform={currentPlatform}
-          onPublish={article && !isRunning ? () => setRightPanel("publish") : undefined}
+          onPublish={article && !effectiveRunning ? () => setRightPanel("publish") : undefined}
+          onArticleUpdate={handleArticleUpdate}
         />
       </main>
 
@@ -326,6 +358,7 @@ export default function Home() {
           )}
         </aside>
       )}
+      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </div>
   );
 }

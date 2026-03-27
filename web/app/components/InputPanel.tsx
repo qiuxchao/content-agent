@@ -41,6 +41,24 @@ const DIRECTIONS = [
   },
 ];
 
+const IMAGE_STYLES = [
+  { key: "", label: "自动" },
+  { key: "warm", label: "温暖" },
+  { key: "fresh", label: "新鲜" },
+  { key: "minimal", label: "极简" },
+  { key: "notion", label: "概念" },
+  { key: "retro", label: "复古" },
+  { key: "bold", label: "粗体" },
+  { key: "cute", label: "可爱" },
+  { key: "chalkboard", label: "黑板" },
+];
+
+const PLATFORM_DEFAULT_STYLES: Record<Platform, string> = {
+  wechat: "warm",
+  xiaohongshu: "fresh",
+  zhihu: "minimal",
+};
+
 const PLATFORMS: { value: Platform; label: string; desc: string; icon: React.ReactNode; brandColor: string }[] = [
   { value: "wechat", label: "公众号", desc: "深度长文", icon: <WechatIcon size={18} />, brandColor: "#07c160" },
   { value: "xiaohongshu", label: "小红书", desc: "种草笔记", icon: <XiaohongshuIcon size={18} />, brandColor: "#fe2c55" },
@@ -48,7 +66,7 @@ const PLATFORMS: { value: Platform; label: string; desc: string; icon: React.Rea
 ];
 
 interface Props {
-  onGenerate: (topic: string, platform: Platform, direction: string) => void;
+  onGenerate: (topic: string, platform: Platform, direction: string, style?: string) => void;
   onStop: () => void;
   onBack?: () => void;
   isRunning: boolean;
@@ -57,6 +75,7 @@ interface Props {
 export function InputPanel({ onGenerate, onStop, onBack, isRunning }: Props) {
   const [topic, setTopic] = useState("");
   const [platform, setPlatform] = useState<Platform>("wechat");
+  const [imageStyle, setImageStyle] = useState<string>("");
   const [directionKey, setDirectionKey] = useState("tech");
   const [roleText, setRoleText] = useState(DIRECTIONS[0].role);
   const [roleEdited, setRoleEdited] = useState(false);
@@ -79,7 +98,7 @@ export function InputPanel({ onGenerate, onStop, onBack, isRunning }: Props) {
     if (!topic.trim() || isRunning) return;
     // 如果用户编辑过 role，走自定义逻辑；否则走预设 key
     const direction = roleEdited ? roleText.trim() : directionKey;
-    onGenerate(topic.trim(), platform, direction || "tech");
+    onGenerate(topic.trim(), platform, direction || "tech", imageStyle || undefined);
   };
 
   const sectionLabel = (text: string) => (
@@ -282,6 +301,47 @@ export function InputPanel({ onGenerate, onStop, onBack, isRunning }: Props) {
                       {p.desc}
                     </span>
                   </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Image Style */}
+        <div style={{ marginTop: 24 }}>
+          {sectionLabel("配图风格")}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {IMAGE_STYLES.map((s) => {
+              const isActive = imageStyle === s.key;
+              const defaultStyleLabel = PLATFORM_DEFAULT_STYLES[platform];
+              const hint = s.key === "" ? `平台默认: ${IMAGE_STYLES.find((x) => x.key === defaultStyleLabel)?.label || defaultStyleLabel}` : "";
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => setImageStyle(s.key)}
+                  disabled={isRunning}
+                  title={hint || undefined}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: 20,
+                    border: `1.5px solid ${isActive ? theme.amber : theme.sand}`,
+                    background: isActive ? theme.amberSoft : "transparent",
+                    cursor: isRunning ? "not-allowed" : "pointer",
+                    fontSize: 13,
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? theme.amber : theme.espresso,
+                    opacity: isRunning ? 0.6 : 1,
+                    transition: "all 0.2s ease",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {s.label}
+                  {s.key === "" && (
+                    <span style={{ fontSize: 11, color: theme.stone, marginLeft: 4 }}>
+                      ({IMAGE_STYLES.find((x) => x.key === PLATFORM_DEFAULT_STYLES[platform])?.label})
+                    </span>
+                  )}
                 </button>
               );
             })}
