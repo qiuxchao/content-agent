@@ -3,8 +3,6 @@ from agent.state import AgentState
 from agent.tools.search import search
 from agent.llm import get_llm
 
-llm = get_llm()
-
 
 def researcher_node(state: AgentState) -> dict:
     """
@@ -30,8 +28,8 @@ def researcher_node(state: AgentState) -> dict:
         history_context = "\n\n---\n\n".join(history_items)
         print(f"  📚 从素材库找到 {len(history_items)} 条历史素材")
 
-    raw_materials: list[str] = state.get("raw_materials", []) if retry_count > 0 else []
     logs: list[str] = []
+    new_materials: list[str] = []
 
     # Step 1: 逐个关键词搜索
     for keyword in state["keywords"]:
@@ -39,7 +37,7 @@ def researcher_node(state: AgentState) -> dict:
         results = search(keyword, max_results=4)
 
         for r in results[:3]:  # 每个关键词取前3条
-            raw_materials.append(
+            new_materials.append(
                 f"标题：{r.get('title', '无标题')}\n"
                 f"内容：{r.get('content', '')}\n"
                 f"来源：{r.get('url', '')}"
@@ -47,7 +45,11 @@ def researcher_node(state: AgentState) -> dict:
 
         logs.append(f"📰 \"{keyword}\" 找到 {len(results)} 条结果")
 
-    print(f"  共收集 {len(raw_materials)} 条原始素材，开始提炼...")
+    # 重试时新素材优先：放在前面，旧素材补充在后，截断时保留新素材
+    old_materials: list[str] = state.get("raw_materials", []) if retry_count > 0 else []
+    raw_materials = new_materials + old_materials
+
+    print(f"  共收集 {len(raw_materials)} 条原始素材（新 {len(new_materials)} 条），开始提炼...")
 
     # Step 2: LLM 整理提炼，控制 token 消耗
     # 只取前 6000 字的原始素材，避免超出上下文
@@ -55,7 +57,7 @@ def researcher_node(state: AgentState) -> dict:
     if len(joined) > 6000:
         joined = joined[:6000] + "\n\n[内容过长，已截断]"
 
-    summary_res = llm.invoke([
+    summary_res = get_llm().invoke([
         SystemMessage(content=(
             "你是信息整理助手。请对以下搜索结果进行整理：\n"
             "1. 去掉重复信息\n"

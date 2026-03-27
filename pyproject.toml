@@ -5,6 +5,7 @@ requires-python = ">=3.11"
 dependencies = [
     "langchain>=0.3",
     "langchain-openai>=0.3",   # OpenAI 规范（Kimi/DeepSeek/通义等均需要）
+    "langchain-anthropic>=0.3", # Anthropic 规范（Claude 系列）
     "langgraph>=0.2",
     "tavily-python>=0.5",
     "requests>=2.32",
@@ -19,6 +20,3 @@ dependencies = [
     "Pillow>=10.0",
 ]
 
-[project.optional-dependencies]
-# 使用 Anthropic 规范（Claude 官方 API）时安装：uv add langchain-anthropic
-anthropic = ["langchain-anthropic>=0.3"]

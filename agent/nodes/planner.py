@@ -3,8 +3,6 @@ from langchain_core.messages import SystemMessage, HumanMessage
 from agent.state import AgentState
 from agent.llm import get_llm
 
-llm = get_llm()
-
 
 def planner_node(state: AgentState) -> dict:
     """
@@ -13,7 +11,7 @@ def planner_node(state: AgentState) -> dict:
     """
     print("\n[Planner] 拆解搜索关键词...")
 
-    res = llm.invoke([
+    res = get_llm().invoke([
         SystemMessage(content=(
             "你是信息检索专家。"
             "将用户给出的文章主题，拆解成2~4个最佳搜索关键词，用于搜索最新资讯。"

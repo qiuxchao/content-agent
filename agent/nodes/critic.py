@@ -4,8 +4,6 @@ from langchain_core.messages import HumanMessage
 from agent.state import AgentState
 from agent.llm import get_llm
 
-llm = get_llm()
-
 CRITIC_PROMPT = """你是一位资深内容编辑，负责评估文章质量。
 
 ## 目标平台：{platform}
@@ -42,11 +40,12 @@ def critic_node(state: AgentState) -> dict:
         draft=state["draft"],
     )
 
-    res = llm.invoke([HumanMessage(content=prompt)])
+    res = get_llm().invoke([HumanMessage(content=prompt)])
     raw = res.content.strip()
 
     # 尝试解析 JSON（模型有时会包裹在 ```json ``` 里）
-    json_match = re.search(r"\{[^}]+\}", raw, re.DOTALL)
+    # 用贪婪匹配捕获最外层 {}，避免 feedback 中含有 } 导致提前截断
+    json_match = re.search(r"\{.*\}", raw, re.DOTALL)
     if json_match:
         try:
             parsed = json.loads(json_match.group())

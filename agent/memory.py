@@ -69,10 +69,6 @@ def search_similar(topic: str, k: int = 3) -> list[str]:
     """
     try:
         store = _get_store()
-        # 检查是否有数据
-        if store._collection.count() == 0:
-            return []
-
         results = store.similarity_search(topic, k=k)
         return [doc.page_content for doc in results]
     except Exception as e:

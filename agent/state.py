@@ -1,4 +1,4 @@
-from typing import TypedDict, Literal
+from typing import TypedDict, Literal, NotRequired
 
 # 支持的平台类型
 Platform = Literal["wechat", "xiaohongshu", "zhihu"]
@@ -29,3 +29,4 @@ class AgentState(TypedDict):
     critic_score: int            # Critic 评分（1~10）
     critic_feedback: str         # Critic 修改建议
     retry_count: int             # 重写次数（最多 2 次）
+    image_style: NotRequired[str]  # 图片风格预设（可选）

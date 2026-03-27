@@ -3,8 +3,6 @@ from agent.state import AgentState
 from agent.prompts.templates import build_prompt
 from agent.llm import get_llm
 
-llm = get_llm()
-
 
 def writer_node(state: AgentState) -> dict:
     """
@@ -21,7 +19,7 @@ def writer_node(state: AgentState) -> dict:
         direction=state.get("direction", ""),
     )
 
-    res = llm.invoke([HumanMessage(content=prompt)])
+    res = get_llm().invoke([HumanMessage(content=prompt)])
     draft = res.content.strip()
 
     # 统计占位符数量，方便调试

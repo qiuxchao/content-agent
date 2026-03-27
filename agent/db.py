@@ -28,6 +28,9 @@ def get_conn():
     try:
         yield conn
         conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
@@ -58,6 +61,12 @@ def init_db():
             );
 
             CREATE INDEX IF NOT EXISTS idx_articles_topic ON articles(topic_id);
+
+            CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL DEFAULT '',
+                updated_at INTEGER NOT NULL
+            );
         """)
 
 
@@ -169,6 +178,34 @@ def find_article(topic_id: int, platform: str) -> dict | None:
             (topic_id, platform),
         ).fetchone()
         return dict(row) if row else None
+
+
+# ─── Settings ──────────────────────────────────────────
+
+def get_settings() -> dict[str, str]:
+    """获取所有设置"""
+    with get_conn() as conn:
+        rows = conn.execute("SELECT key, value FROM settings").fetchall()
+        return {r["key"]: r["value"] for r in rows}
+
+
+def get_setting(key: str, default: str = "") -> str:
+    """获取单个设置"""
+    with get_conn() as conn:
+        row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+        return row["value"] if row else default
+
+
+def save_settings(data: dict[str, str]):
+    """批量保存设置（upsert）"""
+    now = int(time.time())
+    with get_conn() as conn:
+        for key, value in data.items():
+            conn.execute(
+                "INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at",
+                (key, value, now),
+            )
 
 
 # 启动时自动建表

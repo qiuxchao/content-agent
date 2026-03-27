@@ -319,6 +319,7 @@ dependencies = [
     { name = "css-inline" },
     { name = "fastapi" },
     { name = "langchain" },
+    { name = "langchain-anthropic" },
     { name = "langchain-chroma" },
     { name = "langchain-openai" },
     { name = "langgraph" },
@@ -332,17 +333,12 @@ dependencies = [
     { name = "uvicorn" },
 ]
 
-[package.optional-dependencies]
-anthropic = [
-    { name = "langchain-anthropic" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "css-inline", specifier = ">=0.14" },
     { name = "fastapi", specifier = ">=0.115" },
     { name = "langchain", specifier = ">=0.3" },
-    { name = "langchain-anthropic", marker = "extra == 'anthropic'", specifier = ">=0.3" },
+    { name = "langchain-anthropic", specifier = ">=0.3" },
     { name = "langchain-chroma", specifier = ">=0.2" },
     { name = "langchain-openai", specifier = ">=0.3" },
     { name = "langgraph", specifier = ">=0.2" },
@@ -355,7 +351,6 @@ requires-dist = [
     { name = "tavily-python", specifier = ">=0.5" },
     { name = "uvicorn", specifier = ">=0.34" },
 ]
-provides-extras = ["anthropic"]
 
 [[package]]
 name = "css-inline"

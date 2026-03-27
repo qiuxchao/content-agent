@@ -91,19 +91,21 @@ workflow.add_edge("save_memory", END)
 graph = workflow.compile()
 
 
-INITIAL_STATE = {
-    "keywords": [],
-    "raw_materials": [],
-    "context": "",
-    "draft": "",
-    "images": {},
-    "final_article": "",
-    "log": [],
-    "critic_score": 0,
-    "history_context": "",
-    "critic_feedback": "",
-    "retry_count": 0,
-}
+def _initial_state() -> dict:
+    """每次调用返回全新的初始状态，避免可变默认值被复用。"""
+    return {
+        "keywords": [],
+        "raw_materials": [],
+        "context": "",
+        "draft": "",
+        "images": {},
+        "final_article": "",
+        "log": [],
+        "critic_score": 0,
+        "history_context": "",
+        "critic_feedback": "",
+        "retry_count": 0,
+    }
 
 
 def run(topic: str, platform: Platform, direction: str = "tech") -> dict:
@@ -115,7 +117,7 @@ def run(topic: str, platform: Platform, direction: str = "tech") -> dict:
         "topic": topic,
         "platform": platform,
         "direction": direction,
-        **INITIAL_STATE,
+        **_initial_state(),
     })
 
     return {
@@ -125,13 +127,16 @@ def run(topic: str, platform: Platform, direction: str = "tech") -> dict:
     }
 
 
-def run_stream(topic: str, platform: Platform, direction: str = "tech"):
+def run_stream(topic: str, platform: Platform, direction: str = "tech", image_style: str | None = None):
     """
     流式入口，yield 每个节点的输出。
     每次 yield 一个 dict: { "node": str, "data": dict }
     """
+    init = {"topic": topic, "platform": platform, "direction": direction, **_initial_state()}
+    if image_style:
+        init["image_style"] = image_style
     for event in graph.stream(
-        {"topic": topic, "platform": platform, "direction": direction, **INITIAL_STATE},
+        init,
         stream_mode="updates",
     ):
         for node_name, node_output in event.items():

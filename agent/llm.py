@@ -23,24 +23,21 @@ LLM 工厂模块
 import os
 from functools import lru_cache
 from langchain_core.language_models import BaseChatModel
-
-
-def _get_env(key: str, default: str = "") -> str:
-    return os.getenv(key, default).strip()
+from agent.config import get_config
 
 
 @lru_cache(maxsize=4)
 def get_llm() -> BaseChatModel:
     """
-    根据环境变量返回 LLM 实例。
+    根据配置返回 LLM 实例（优先级：env > SQLite > 默认值）。
     结果会被缓存（只创建一次）。
     """
-    provider = _get_env("LLM_PROVIDER", "openai").lower()
-    api_key  = _get_env("LLM_API_KEY")
-    model    = _get_env("LLM_MODEL", "gpt-4o-mini")
+    provider = get_config("LLM_PROVIDER", "openai").lower()
+    api_key  = get_config("LLM_API_KEY")
+    model    = get_config("LLM_MODEL", "gpt-4o-mini")
 
     if not api_key:
-        raise ValueError("未设置 LLM_API_KEY，请检查 .env 文件")
+        raise ValueError("未设置 LLM_API_KEY，请在设置中填写")
 
     if provider == "anthropic":
         return _make_anthropic(api_key, model)
@@ -60,7 +57,7 @@ def _make_openai(api_key: str, model: str) -> BaseChatModel:
     """
     from langchain_openai import ChatOpenAI
 
-    base_url = _get_env("LLM_BASE_URL")  # 不填则使用 OpenAI 默认地址
+    base_url = get_config("LLM_BASE_URL")  # 不填则使用 OpenAI 默认地址
 
     kwargs = dict(
         api_key=api_key,
@@ -76,20 +73,16 @@ def _make_openai(api_key: str, model: str) -> BaseChatModel:
 
 
 def _make_anthropic(api_key: str, model: str) -> BaseChatModel:
-    """
-    创建原生 Anthropic LLM。
-    需要额外安装：uv add langchain-anthropic
-    """
-    try:
-        from langchain_anthropic import ChatAnthropic
-    except ImportError:
-        raise ImportError(
-            "使用 Anthropic 规范需要安装额外依赖：\n"
-            "  uv add langchain-anthropic"
-        )
+    """创建原生 Anthropic LLM。"""
+    from langchain_anthropic import ChatAnthropic
 
     print(f"  [LLM] Anthropic 规范 | model={model}")
     return ChatAnthropic(
         api_key=api_key,
         model_name=model,
     )
+
+
+def reset_llm_cache() -> None:
+    """设置更新后调用此函数，使 LLM 实例缓存失效，下次调用时重新创建。"""
+    get_llm.cache_clear()

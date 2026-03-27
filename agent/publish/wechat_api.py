@@ -12,6 +12,7 @@ API 文档：https://developers.weixin.qq.com/doc/offiaccount/Getting_Started/Ov
 import os
 import tempfile
 import requests
+from agent.config import get_config
 
 _BASE_URL = "https://api.weixin.qq.com/cgi-bin"
 
@@ -43,13 +44,13 @@ def _create_placeholder_cover() -> str:
 
 
 def _get_credentials() -> tuple[str, str]:
-    """从环境变量获取微信 API 凭证"""
-    app_id = os.getenv("WECHAT_APP_ID", "").strip()
-    app_secret = os.getenv("WECHAT_APP_SECRET", "").strip()
+    """获取微信 API 凭证（env > SQLite > 报错）"""
+    app_id = get_config("WECHAT_APP_ID")
+    app_secret = get_config("WECHAT_APP_SECRET")
     if not app_id or not app_secret:
         raise ValueError(
             "未配置微信公众号 API 凭证。\n"
-            "请在 .env 中设置 WECHAT_APP_ID 和 WECHAT_APP_SECRET。\n"
+            "请在设置中填写 WECHAT_APP_ID 和 WECHAT_APP_SECRET。\n"
             "获取方式：mp.weixin.qq.com → 开发 → 基本配置"
         )
     return app_id, app_secret
@@ -128,9 +129,9 @@ def upload_body_image_from_url(access_token: str, image_url: str) -> str:
     elif "webp" in content_type:
         suffix = ".webp"
 
-    path = os.path.join(tempfile.gettempdir(), f"wechat_body_img{suffix}")
-    with open(path, "wb") as f:
-        f.write(resp.content)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(resp.content)
+        path = tmp.name
 
     try:
         return upload_body_image(access_token, path)
@@ -151,7 +152,7 @@ def create_draft(
     用户可在 mp.weixin.qq.com 的「内容管理 → 草稿箱」中查看和发布。
     """
     if not author:
-        author = os.getenv("WECHAT_DEFAULT_AUTHOR", "").strip()
+        author = get_config("WECHAT_DEFAULT_AUTHOR")
 
     # 清理标题中可能残留的 Markdown 格式
     title = title.lstrip("# ").strip().replace("**", "").replace("*", "")
@@ -202,10 +203,8 @@ def create_draft(
 
 
 def check_configured() -> bool:
-    """检查微信 API 是否已配置"""
-    app_id = os.getenv("WECHAT_APP_ID", "").strip()
-    app_secret = os.getenv("WECHAT_APP_SECRET", "").strip()
-    return bool(app_id and app_secret)
+    """检查微信 API 是否已配置（env > SQLite）"""
+    return bool(get_config("WECHAT_APP_ID") and get_config("WECHAT_APP_SECRET"))
 
 
 def publish_article(
