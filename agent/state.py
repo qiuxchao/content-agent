@@ -10,14 +10,16 @@ class AgentState(TypedDict):
     每个节点只负责填充自己那部分，数据自动向下游传递。
 
     数据流向：
-      planner       → 填 keywords
-      researcher    → 填 raw_materials, context
-      writer        → 填 draft（含 [IMAGE:...] 占位符）
-      image_fetcher → 填 images, final_article
+      pre_researcher → 填 raw_materials, history_context（预搜索）
+      planner        → 填 outline（基于搜索结果规划）
+      researcher     → 填 keywords, raw_materials, context（精准补充搜索）
+      writer         → 填 draft（含 [IMAGE:...] 占位符）
+      image_fetcher  → 填 images, final_article
     """
     topic: str                   # 用户输入的主题
     platform: Platform           # 目标平台
     direction: str               # 内容方向（预设 key 或自定义描述）
+    outline: str                 # Planner 规划的文章大纲（角度、框架、要点）
     keywords: list[str]          # Planner 拆解的搜索关键词
     raw_materials: list[str]     # 搜索到的原始素材（每条一个字符串）
     context: str                 # 整理后的素材摘要（喂给 Writer）

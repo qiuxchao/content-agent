@@ -158,7 +158,7 @@ export default function Home() {
                     setRefreshKey((k) => k + 1);
                   }
                 }
-                if (event.data.log?.length) gs.logs = [...gs.logs, ...event.data.log];
+                if (event.data.log?.length) gs.logs = event.data.log;
                 if (event.data.keywords?.length) gs.keywords = event.data.keywords;
                 if (event.data.final_article) gs.article = event.data.final_article;
                 if (event.data.critic_score) gs.score = event.data.critic_score;

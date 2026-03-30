@@ -32,7 +32,7 @@ class GeneratedImage:
     credit: str     # 署名 / 来源说明
 
 
-# ── 风格预设（参考 baoyu-skills 风格体系）──────────────────────
+# ── 风格预设──────────────────────
 STYLE_PRESETS: dict[str, dict] = {
     "warm": {
         "label": "温暖",

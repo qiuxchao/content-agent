@@ -17,6 +17,7 @@ def writer_node(state: AgentState) -> dict:
         topic=state["topic"],
         context=state["context"],
         direction=state.get("direction", ""),
+        outline=state.get("outline", ""),
     )
 
     res = get_llm().invoke([HumanMessage(content=prompt)])

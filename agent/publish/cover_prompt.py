@@ -2,7 +2,6 @@
 封面图提示词生成器
 
 用 LLM 根据文章标题、摘要和内容分析生成高质量的 AI 绘图 prompt。
-参考 baoyu-skills 的 cover-image 和 visual-elements 设计体系。
 """
 
 from langchain_core.messages import SystemMessage, HumanMessage

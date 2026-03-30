@@ -14,7 +14,7 @@ from agent.state import Platform
 #   {direction} → 内容方向描述（预设或自定义）
 #   [IMAGE: 英文关键词] → ImageFetcher 自动替换
 #
-# 标题公式参考（来源：baoyu-skills/title-formulas）：
+# 标题公式：
 #   颠覆式 / 方案式 / 悬念式 / 数字式
 #   对比式 / 结果前置 / 反问式 / 共情式
 # ─────────────────────────────────────────────────────────
@@ -187,15 +187,19 @@ def get_direction_text(direction: str) -> str:
     return f"你是一位专业的内容创作者。你的写作方向是：{direction}"
 
 
-def build_prompt(platform: Platform, topic: str, context: str, direction: str = "") -> str:
+def build_prompt(platform: Platform, topic: str, context: str, direction: str = "", outline: str = "") -> str:
     """用实际内容替换模板中的占位符"""
     if not direction:
         direction = DEFAULT_DIRECTION
     direction_text = get_direction_text(direction)
     template = PLATFORM_PROMPTS[platform]
-    return (
+    result = (
         template
         .replace("{direction}", direction_text)
         .replace("{topic}", topic)
         .replace("{context}", context)
     )
+    # 注入文章规划（如果有）
+    if outline:
+        result = result.replace("【素材】", f"【文章规划（Planner 产出，请参考但不必死板遵循）】\n{outline}\n\n【素材】")
+    return result

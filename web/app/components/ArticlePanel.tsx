@@ -2,14 +2,17 @@
 
 import { App, Button, Tooltip, Upload } from "antd";
 import { CopyOutlined, CheckOutlined, SendOutlined, UploadOutlined, PictureOutlined } from "@ant-design/icons";
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github.css";
 import { theme } from "../theme";
 
 const NODE_LABELS: Record<string, string> = {
-  planner: "正在拆解关键词",
-  researcher: "正在搜索素材",
+  pre_researcher: "正在预搜索",
+  planner: "正在分析选题",
+  researcher: "正在补充搜索",
   writer: "正在写作",
   critic: "正在评估质量",
   increment_retry: "准备重写",
@@ -196,6 +199,7 @@ export function ArticlePanel({ article, isRunning, currentNode, platform, onPubl
       >
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeHighlight]}
           components={{
             a: ({ href, children }) => (
               <a

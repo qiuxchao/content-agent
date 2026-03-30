@@ -5,8 +5,9 @@ import { Tag, Progress } from "antd";
 import { theme } from "../theme";
 
 const PIPELINE = [
-  { key: "planner", label: "拆解关键词" },
-  { key: "researcher", label: "搜索素材" },
+  { key: "pre_researcher", label: "预搜索" },
+  { key: "planner", label: "分析选题" },
+  { key: "researcher", label: "补充搜索" },
   { key: "writer", label: "写作" },
   { key: "critic", label: "质量评估" },
   { key: "image_fetcher", label: "获取插图" },

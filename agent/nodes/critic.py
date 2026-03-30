@@ -31,6 +31,9 @@ CRITIC_USER = """## 目标平台：{platform}
 
 ## 主题：{topic}
 
+## 文章规划（Planner 产出）
+{outline}
+
 ## 搜索素材（Writer 的输入）
 {context}
 
@@ -59,6 +62,7 @@ def critic_node(state: AgentState) -> dict:
     user = CRITIC_USER.format(
         platform=state["platform"],
         topic=state["topic"],
+        outline=state.get("outline", "（无规划）"),
         context=state.get("context", ""),
         history_section=history_section,
         draft=state["draft"],

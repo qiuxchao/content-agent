@@ -17,30 +17,111 @@ from agent.config import get_config
 _BASE_URL = "https://api.weixin.qq.com/cgi-bin"
 
 
-def _create_placeholder_cover() -> str:
-    """生成一张 900x383 的纯色占位封面图（16:9 比例），返回临时文件路径"""
-    try:
-        from PIL import Image
-        img = Image.new("RGB", (900, 383), color=(250, 248, 245))
-        path = os.path.join(tempfile.gettempdir(), "wechat_placeholder_cover.png")
-        img.save(path)
-        return path
-    except ImportError:
-        # 没有 Pillow，用最小的合法 PNG（1x1 白色像素）
-        import struct
-        import zlib
-        path = os.path.join(tempfile.gettempdir(), "wechat_placeholder_cover.png")
+def _find_cjk_font() -> str | None:
+    """查找系统中可用的中文字体路径"""
+    candidates = [
+        "/System/Library/Fonts/STHeiti Medium.ttc",        # macOS
+        "/System/Library/Fonts/Hiragino Sans GB.ttc",      # macOS
+        "/System/Library/Fonts/Supplemental/Songti.ttc",   # macOS
+        "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",  # Linux
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "C:\\Windows\\Fonts\\msyh.ttc",                    # Windows 微软雅黑
+        "C:\\Windows\\Fonts\\simhei.ttf",                  # Windows 黑体
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return None
 
-        def _chunk(chunk_type, data):
-            c = chunk_type + data
-            return struct.pack(">I", len(data)) + c + struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
 
-        with open(path, "wb") as f:
-            f.write(b"\x89PNG\r\n\x1a\n")
-            f.write(_chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)))
-            f.write(_chunk(b"IDAT", zlib.compress(b"\x00\xff\xff\xff")))
-            f.write(_chunk(b"IEND", b""))
-        return path
+def _create_placeholder_cover(title: str = "", summary: str = "") -> str:
+    """
+    生成一张 900x383 的封面图（约 2.35:1），返回临时文件路径。
+
+    设计：
+    - 暖色渐变背景
+    - 标题文字居中
+    - 底部装饰线条
+    """
+    from PIL import Image, ImageDraw, ImageFont
+
+    W, H = 900, 383
+    img = Image.new("RGB", (W, H))
+    draw = ImageDraw.Draw(img)
+
+    # ── 暖色渐变背景 ──
+    top_color = (26, 26, 46)       # 深蓝灰 #1A1A2E
+    bottom_color = (44, 62, 80)    # 深蓝 #2C3E50
+    for y in range(H):
+        r = int(top_color[0] + (bottom_color[0] - top_color[0]) * y / H)
+        g = int(top_color[1] + (bottom_color[1] - top_color[1]) * y / H)
+        b = int(top_color[2] + (bottom_color[2] - top_color[2]) * y / H)
+        draw.line([(0, y), (W, y)], fill=(r, g, b))
+
+    # ── 装饰：顶部和底部的金色细线 ──
+    accent = (255, 214, 0)  # 金色 #FFD600
+    draw.line([(60, 40), (W - 60, 40)], fill=accent, width=2)
+    draw.line([(60, H - 40), (W - 60, H - 40)], fill=accent, width=2)
+
+    # ── 装饰：角落点缀 ──
+    dot_r = 3
+    for x, y in [(70, 40), (W - 70, 40), (70, H - 40), (W - 70, H - 40)]:
+        draw.ellipse([x - dot_r, y - dot_r, x + dot_r, y + dot_r], fill=accent)
+
+    # ── 标题文字 ──
+    if title:
+        title = title.lstrip("# ").strip().replace("**", "")
+
+        font_path = _find_cjk_font()
+        if font_path:
+            # 根据标题长度自适应字号
+            font_size = 38 if len(title) <= 20 else 32 if len(title) <= 30 else 26
+            font = ImageFont.truetype(font_path, font_size)
+
+            # 自动换行
+            max_width = W - 160
+            lines: list[str] = []
+            current = ""
+            for ch in title:
+                test = current + ch
+                bbox = font.getbbox(test)
+                if bbox[2] - bbox[0] > max_width:
+                    lines.append(current)
+                    current = ch
+                else:
+                    current = test
+            if current:
+                lines.append(current)
+            lines = lines[:3]  # 最多 3 行
+
+            line_height = font_size + 10
+            total_h = line_height * len(lines)
+            y_start = (H - total_h) // 2 - 5
+
+            for i, line in enumerate(lines):
+                bbox = font.getbbox(line)
+                tw = bbox[2] - bbox[0]
+                x = (W - tw) // 2
+                y = y_start + i * line_height
+                draw.text((x, y), line, fill=(255, 255, 255), font=font)
+
+            # 摘要（标题下方小字）
+            if summary and len(lines) <= 2:
+                summary_text = summary.lstrip("> ").strip()
+                if len(summary_text) > 40:
+                    summary_text = summary_text[:38] + "..."
+                small_font = ImageFont.truetype(font_path, 16)
+                bbox = small_font.getbbox(summary_text)
+                sw = bbox[2] - bbox[0]
+                sy = y_start + total_h + 15
+                draw.text(((W - sw) // 2, sy), summary_text, fill=(180, 180, 200), font=small_font)
+        else:
+            # 没有中文字体，用默认字体只写英文部分
+            draw.text((W // 2 - 40, H // 2 - 10), "ARTICLE", fill=(255, 255, 255))
+
+    path = os.path.join(tempfile.gettempdir(), "wechat_cover.png")
+    img.save(path, "PNG")
+    return path
 
 
 def _get_credentials() -> tuple[str, str]:
@@ -92,18 +173,43 @@ def upload_image(access_token: str, image_path: str) -> str:
     return data["media_id"]
 
 
+def _ensure_compatible_format(image_path: str) -> tuple[str, bool]:
+    """
+    微信只支持 jpg/png，遇到 webp 等格式先转成 png。
+    返回 (可用的图片路径, 是否为临时文件需要清理)。
+    """
+    if not image_path.lower().endswith(".webp"):
+        return image_path, False
+    try:
+        from PIL import Image
+        img = Image.open(image_path).convert("RGBA")
+        converted = image_path.rsplit(".", 1)[0] + ".png"
+        if os.path.dirname(image_path) == "":
+            converted = os.path.join(tempfile.gettempdir(), os.path.basename(converted))
+        img.save(converted, "PNG")
+        return converted, True
+    except ImportError:
+        raise RuntimeError("需要 Pillow 来转换 webp 图片，请运行: pip install Pillow")
+
+
 def upload_body_image(access_token: str, image_path: str) -> str:
     """
     上传正文图片到微信，返回微信 URL。
     用于文章内的图片（media/uploadimg 接口，只返回 URL 不返回 media_id）。
+    微信不支持 webp，会自动转为 png。
     """
-    with open(image_path, "rb") as f:
-        resp = requests.post(
-            f"{_BASE_URL}/media/uploadimg",
-            params={"access_token": access_token},
-            files={"media": (os.path.basename(image_path), f, "image/png")},
-            timeout=30,
-        )
+    actual_path, need_cleanup = _ensure_compatible_format(image_path)
+    try:
+        with open(actual_path, "rb") as f:
+            resp = requests.post(
+                f"{_BASE_URL}/media/uploadimg",
+                params={"access_token": access_token},
+                files={"media": (os.path.basename(actual_path), f, "image/png")},
+                timeout=30,
+            )
+    finally:
+        if need_cleanup and os.path.exists(actual_path):
+            os.unlink(actual_path)
     data = resp.json()
     if "url" not in data:
         raise RuntimeError(f"上传正文图片失败：{data.get('errmsg', data)}")
@@ -114,11 +220,34 @@ def upload_body_image(access_token: str, image_path: str) -> str:
     return url
 
 
+def _resolve_local_path(image_url: str) -> str | None:
+    """
+    如果是本地 API 提供的图片 URL（localhost），直接返回磁盘路径，避免 HTTP 回环下载。
+    """
+    import re as _re
+    match = _re.search(r"https?://localhost[:\d]*/api/images/(.+)$", image_url)
+    if not match:
+        return None
+    filename = match.group(1)
+    # data/images/ 相对于项目根目录
+    local_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "images", filename)
+    if os.path.exists(local_path):
+        return local_path
+    return None
+
+
 def upload_body_image_from_url(access_token: str, image_url: str) -> str:
     """
     下载外部图片并上传到微信，返回微信 URL。
+    对 localhost 图片直接读磁盘，避免回环超时。
     """
-    # 绕过系统代理（Clash 等）下载本地图片，避免超时
+    # 优先检查是否为本地图片
+    local_path = _resolve_local_path(image_url)
+    if local_path:
+        print(f"  [WeChat] 本地图片，直接读取: {os.path.basename(local_path)}")
+        return upload_body_image(access_token, local_path)
+
+    # 外部图片：下载后再上传
     resp = requests.get(image_url, timeout=15, proxies={"http": None, "https": None})
     if resp.status_code != 200:
         raise RuntimeError(f"下载图片失败: {image_url}")
@@ -255,7 +384,7 @@ def publish_article(
     if cover_path and os.path.exists(cover_path):
         thumb_media_id = upload_image(token, cover_path)
     else:
-        placeholder = _create_placeholder_cover()
+        placeholder = _create_placeholder_cover(title=title, summary=summary)
         thumb_media_id = upload_image(token, placeholder)
         os.unlink(placeholder)
 
