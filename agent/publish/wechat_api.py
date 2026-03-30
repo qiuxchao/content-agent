@@ -118,7 +118,8 @@ def upload_body_image_from_url(access_token: str, image_url: str) -> str:
     """
     下载外部图片并上传到微信，返回微信 URL。
     """
-    resp = requests.get(image_url, timeout=15)
+    # 绕过系统代理（Clash 等）下载本地图片，避免超时
+    resp = requests.get(image_url, timeout=15, proxies={"http": None, "https": None})
     if resp.status_code != 200:
         raise RuntimeError(f"下载图片失败: {image_url}")
 

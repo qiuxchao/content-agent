@@ -207,6 +207,16 @@ export function ArticlePanel({ article, isRunning, currentNode, platform, onPubl
                 {children}
               </a>
             ),
+            // 含图片占位符的段落用 div 替代 p，避免 <div> 嵌套在 <p> 内的 hydration 错误
+            p: ({ children, node }) => {
+              const hasBlockChild = node?.children?.some(
+                (child: { type: string; tagName?: string }) =>
+                  child.type === "element" && child.tagName === "img"
+              );
+              return hasBlockChild
+                ? <div style={{ marginBottom: "1em" }}>{children}</div>
+                : <p>{children}</p>;
+            },
             img: ({ src, alt }) => {
               if (src === "prompt-placeholder" && alt) {
                 const prompt = alt;

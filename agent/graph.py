@@ -127,17 +127,42 @@ def run(topic: str, platform: Platform, direction: str = "tech") -> dict:
     }
 
 
+_NEXT_NODE = {
+    "planner": "researcher",
+    "researcher": "writer",
+    "writer": "critic",
+    "image_fetcher": "save_memory",
+    "save_memory": "",
+}
+
+
 def run_stream(topic: str, platform: Platform, direction: str = "tech", image_style: str | None = None):
     """
     流式入口，yield 每个节点的输出。
-    每次 yield 一个 dict: { "node": str, "data": dict }
+    每次 yield 一个 dict: { "node": str, "data": dict, "active": str }
+    active 表示当前正在执行的节点（即下一个节点），用于前端状态同步。
     """
     init = {"topic": topic, "platform": platform, "direction": direction, **_initial_state()}
     if image_style:
         init["image_style"] = image_style
+
+    retry_count = 0
     for event in graph.stream(
         init,
         stream_mode="updates",
     ):
         for node_name, node_output in event.items():
-            yield {"node": node_name, "data": node_output}
+            if node_name == "increment_retry":
+                retry_count += 1
+
+            # 计算当前正在运行的节点（下一个节点）
+            if node_name == "critic":
+                score = node_output.get("critic_score", 7)
+                if score < 7 and retry_count < 2:
+                    active = "researcher"
+                else:
+                    active = "image_fetcher"
+            else:
+                active = _NEXT_NODE.get(node_name, "")
+
+            yield {"node": node_name, "data": node_output, "active": active}

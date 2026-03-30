@@ -13,6 +13,7 @@ export type Platform = "wechat" | "xiaohongshu" | "zhihu";
 
 export interface AgentEvent {
   node: string;
+  active?: string;
   data: {
     log?: string[];
     keywords?: string[];
@@ -146,8 +147,8 @@ export default function Home() {
                   setLeftPanel("topics");
                 }
               } else {
-                // 始终更新 ref 缓存
-                gs.currentNode = event.node;
+                // 始终更新 ref 缓存（active 表示当前正在执行的节点）
+                gs.currentNode = event.active || event.node;
                 if (event.data.topic_id) {
                   const isNewTopic = gs.topicId !== event.data.topic_id;
                   gs.topicId = event.data.topic_id;

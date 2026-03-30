@@ -80,6 +80,7 @@ async def generate(req: GenerateRequest):
 
             payload = {
                 "node": node,
+                "active": event.get("active", node),
                 "data": {
                     "log": data.get("log", []),
                     "keywords": data.get("keywords", []),
