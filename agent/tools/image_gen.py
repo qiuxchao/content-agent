@@ -127,14 +127,25 @@ def _get_style_prompt(style: str | None, platform: str | None) -> str:
 
 
 def build_image_prompt(keyword: str, style: str | None = None, platform: str | None = None) -> str:
-    """构建完整的图片生成 prompt"""
-    style_prompt = _get_style_prompt(style, platform)
-    return (
-        f"Create an illustration about: {keyword}. "
-        f"Style: {style_prompt} "
-        f"The image should be visually appealing, suitable for a blog article. "
-        f"No text or words in the image. Landscape orientation 16:9."
-    )
+    """
+    构建完整的图片生成 prompt。
+    如果 keyword 已经是详细的绘图描述（含色彩/风格），直接使用；
+    否则附加风格预设兜底。
+    """
+    # 检测 keyword 是否已经足够详细（含色彩 hex 或明确 style 指令）
+    is_detailed = "#" in keyword or "style:" in keyword.lower() or "color palette" in keyword.lower()
+    if is_detailed:
+        # LLM 生成的描述已经很完整，只补充基本约束
+        return f"{keyword}. No watermarks."
+    else:
+        # 兜底：简短关键词需要风格预设补充
+        style_prompt = _get_style_prompt(style, platform)
+        return (
+            f"{keyword}. "
+            f"Style: {style_prompt} "
+            f"Clean composition, clear visual hierarchy. "
+            f"No watermarks. Landscape 16:9 aspect ratio."
+        )
 
 
 # ── Provider 实现 ────────────────────────────────────────────
