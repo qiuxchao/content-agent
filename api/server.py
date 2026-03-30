@@ -20,7 +20,7 @@ from agent.config import get_config
 from agent.llm import reset_llm_cache
 from agent.prompts.templates import DIRECTION_PRESETS, DEFAULT_DIRECTION
 from agent.publish.wechat_api import check_configured as wechat_configured, publish_article
-from agent.publish.wechat_html import md_to_wechat_html, AVAILABLE_THEMES
+from agent.publish.wechat_html import md_to_wechat_html, AVAILABLE_THEMES, AVAILABLE_CODE_THEMES
 from agent.publish.cover_prompt import generate_cover_prompt
 from agent import db
 from agent.tools.image_gen import STYLE_PRESETS, PLATFORM_STYLES
@@ -196,13 +196,59 @@ async def wechat_status():
     return {
         "configured": wechat_configured(),
         "themes": [{"key": k, "label": v} for k, v in AVAILABLE_THEMES.items()],
+        "code_themes": [{"key": k, "label": v["label"]} for k, v in AVAILABLE_CODE_THEMES.items()],
     }
 
 
+@app.post("/api/publish/wechat/recommend-theme")
+async def wechat_recommend_theme(article: str = Form(...), platform: str = Form("wechat")):
+    """根据文章内容推荐主题组合（仅微信平台触发）"""
+    if platform != "wechat":
+        return {"theme": "default", "code_theme": "atom-one-dark", "serif": True}
+
+    from agent.llm import get_llm
+    from langchain_core.messages import SystemMessage, HumanMessage
+    import json as _json
+
+    # 取文章前 500 字做分析
+    snippet = article[:500]
+    has_code = "```" in article
+
+    res = get_llm().invoke([
+        SystemMessage(content=(
+            "你是排版设计师。根据文章内容，从以下选项中推荐最契合的主题组合。\n"
+            "文章主题: default(蓝色系,通用), elegant(暗红暖调,深度长文), minimal(黑白极简,设计感), "
+            "grace(蓝绿虚线,雅致), modern(紫色圆润,现代), warm(金棕暖色,生活), green(清新绿,科技开源), red(红色,重要公告)\n"
+            "代码主题: atom-one-dark, atom-one-light, monokai, github, vs2015, xcode\n"
+            "衬线字体: true(适合长文叙述) / false(适合技术速报)\n\n"
+            "直接返回JSON，不要其他内容：\n"
+            '{"theme":"xxx","code_theme":"xxx","serif":true/false,"reason":"一句话理由"}'
+        )),
+        HumanMessage(content=f"文章片段：\n{snippet}\n\n是否包含代码块：{'是' if has_code else '否'}"),
+    ])
+
+    try:
+        text = res.content.strip().replace("```json", "").replace("```", "")
+        data = _json.loads(text)
+        return {
+            "theme": data.get("theme", "default"),
+            "code_theme": data.get("code_theme", "atom-one-dark"),
+            "serif": data.get("serif", True),
+            "reason": data.get("reason", ""),
+        }
+    except Exception:
+        return {"theme": "default", "code_theme": "atom-one-dark", "serif": True, "reason": ""}
+
+
 @app.post("/api/publish/wechat/preview")
-async def wechat_preview(article: str = Form(...), theme: str = Form("default")):
+async def wechat_preview(
+    article: str = Form(...),
+    theme: str = Form("default"),
+    code_theme: str = Form("atom-one-dark"),
+    serif: bool = Form(True),
+):
     """Markdown → 微信 HTML 预览"""
-    result = md_to_wechat_html(article, theme=theme)
+    result = md_to_wechat_html(article, theme=theme, code_theme=code_theme, serif=serif)
     return result
 
 
@@ -223,6 +269,8 @@ async def cover_prompt(req: CoverPromptRequest):
 async def wechat_publish(
     article: str = Form(...),
     theme: str = Form("default"),
+    code_theme: str = Form("atom-one-dark"),
+    serif: bool = Form(True),
     title: str = Form(""),
     summary: str = Form(""),
     author: str = Form(""),
@@ -242,8 +290,8 @@ async def wechat_publish(
 
     try:
         result = publish_article(
-            md_text=article, theme=theme, title=title,
-            summary=summary, author=author, cover_path=cover_path,
+            md_text=article, theme=theme, code_theme=code_theme, serif=serif,
+            title=title, summary=summary, author=author, cover_path=cover_path,
         )
         # 更新文章状态
         if article_id:

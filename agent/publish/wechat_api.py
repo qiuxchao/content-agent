@@ -340,6 +340,8 @@ def check_configured() -> bool:
 def publish_article(
     md_text: str,
     theme: str = "default",
+    code_theme: str = "",
+    serif: bool = True,
     title: str = "",
     summary: str = "",
     author: str = "",
@@ -350,10 +352,10 @@ def publish_article(
 
     返回 { "media_id": str, "title": str, "summary": str }
     """
-    from agent.publish.wechat_html import md_to_wechat_html
+    from agent.publish.wechat_html import md_to_wechat_html, DEFAULT_CODE_THEME
 
     # 1. 转换 HTML
-    result = md_to_wechat_html(md_text, theme=theme)
+    result = md_to_wechat_html(md_text, theme=theme, code_theme=code_theme or DEFAULT_CODE_THEME, serif=serif)
     html = result["html"]
     if not title:
         title = result["title"]

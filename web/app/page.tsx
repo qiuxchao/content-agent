@@ -346,6 +346,7 @@ export default function Home() {
           {rightPanel === "publish" ? (
             <PublishPanel
               article={article}
+              platform={currentPlatform}
               onBack={() => setRightPanel("status")}
             />
           ) : (

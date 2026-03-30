@@ -1,61 +1,29 @@
-/* 微信公众号红绯主题 —— 红色调，适合 Java/安全/重要公告类 */
+/* 红绯 —— 沉稳红色系，有力度 */
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", sans-serif;
-  font-size: 16px;
-  line-height: 1.9;
-  color: #333;
-  padding: 0;
-  margin: 0;
-}
+body { font-family: Optima-Regular, Optima, PingFangSC-light, PingFangTC-light, "PingFang SC", Cambria, Cochin, Georgia, Times, "Times New Roman", serif; font-size: 16px; line-height: 1.75; color: #353535; padding: 0; margin: 0; letter-spacing: 0.5px; }
 
-h1 {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin: 28px 0 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #e74c3c;
-}
+h1 { font-size: 24px; font-weight: 700; color: #1a1a1a; margin: 32px 0 16px; }
+h2 { font-size: 21px; font-weight: 700; color: #1a1a1a; margin: 28px 0 14px; padding-bottom: 8px; border-bottom: 2px solid #dc2626; }
+h3 { font-size: 17px; font-weight: 600; color: #1a1a1a; margin: 22px 0 10px; }
 
-h2 {
-  font-size: 20px;
-  font-weight: 700;
-  color: #c0392b;
-  margin: 24px 0 12px;
-  padding-left: 12px;
-  border-left: 4px solid #e74c3c;
-}
-
-h3 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 20px 0 10px;
-}
-
-p { margin: 12px 0; font-size: 16px; line-height: 1.9; color: #333; }
-strong { font-weight: 700; color: #c0392b; }
+p { padding: 6px 0; margin: 0; font-size: 16px; line-height: 1.75; }
+strong { font-weight: 700; color: #dc2626; }
 em { font-style: italic; color: #666; }
-a { color: #c0392b; text-decoration: none; }
+a { color: #dc2626; text-decoration: none; font-weight: 600; border-bottom: 1px solid #dc2626; }
 
-blockquote {
-  margin: 16px 0; padding: 12px 16px;
-  background: #fdf2f2; border-left: 4px solid #e74c3c;
-  color: #666;
-}
-blockquote p { margin: 4px 0; color: #666; }
+blockquote { margin: 18px 0; padding: 12px 16px; background: #fef2f2; border-left: 3px solid #dc2626; color: #666; font-size: 15px; line-height: 1.7; }
+blockquote p { margin: 4px 0; padding: 4px 0; color: #666; font-size: 15px; }
 
-ul, ol { margin: 12px 0; padding-left: 24px; }
-li { margin: 6px 0; font-size: 16px; line-height: 1.8; }
+ul, ol { margin: 10px 0; padding-left: 24px; }
+li { margin: 4px 0; font-size: 16px; line-height: 1.7; }
 
-code { font-family: "SF Mono", Menlo, Consolas, monospace; background: #fdf2f2; padding: 2px 6px; border-radius: 3px; font-size: 14px; color: #c0392b; }
-pre { margin: 16px 0; padding: 16px; background: #2c1a1a; border-radius: 6px; overflow-x: auto; }
-pre code { background: none; padding: 0; color: #d4b0b0; font-size: 14px; border-radius: 0; }
+code { font-family: "Operator Mono", Consolas, Monaco, Menlo, monospace; background: rgba(220,38,38,0.05); padding: 2px 5px; margin: 0 2px; border-radius: 3px; font-size: 14px; color: #dc2626; }
+pre { margin: 16px 0; padding: 16px; background: #2a1a1a; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; padding: 0; margin: 0; color: #d4b0b0; font-size: 14px; border-radius: 0; }
 
 table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 15px; }
-th { background: #e74c3c; color: #fff; font-weight: 600; text-align: left; padding: 10px 12px; }
-td { padding: 10px 12px; border: 1px solid #eee; }
+th { background: #dc2626; font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid #dc2626; color: #fff; }
+td { padding: 8px 12px; border: 1px solid #f0dada; color: #353535; }
 
 img { max-width: 100%; border-radius: 6px; margin: 16px 0; display: block; }
-hr { border: none; border-top: 1px solid #eee; margin: 24px 0; }
+hr { border: none; border-top: 1px solid #f0dada; margin: 28px 0; }

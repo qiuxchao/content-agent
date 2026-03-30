@@ -1,148 +1,29 @@
-/* 微信公众号极简主题 —— 黑白为主，科技感 */
+/* 极简黑 —— 黑白对比，几何感 */
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  font-size: 16px;
-  line-height: 1.85;
-  color: #2b2b2b;
-  padding: 0;
-  margin: 0;
-}
+body { font-family: Optima-Regular, Optima, PingFangSC-light, PingFangTC-light, "PingFang SC", Cambria, Cochin, Georgia, Times, "Times New Roman", serif; font-size: 15px; line-height: 1.8; color: #1a1a1a; padding: 0; margin: 0; }
 
-h1 {
-  font-size: 24px;
-  font-weight: 800;
-  color: #000;
-  margin: 30px 0 16px;
-  line-height: 1.35;
-  letter-spacing: -0.5px;
-}
+h1 { font-size: 24px; font-weight: 700; color: #000; margin: 32px 0 16px; }
+h2 { font-size: 20px; font-weight: 700; color: #000; margin: 48px 24px 20px; padding: 10px 0; border: 1px solid #000; text-align: center; line-height: 1.2; }
+h3 { font-size: 16px; font-weight: 700; color: #fff; background: #000; padding: 3px 12px; display: inline-block; margin: 32px 0 12px; }
 
-h2 {
-  font-size: 19px;
-  font-weight: 700;
-  color: #000;
-  margin: 26px 0 10px;
-  padding-bottom: 6px;
-  border-bottom: 2px solid #000;
-  line-height: 1.4;
-  letter-spacing: -0.3px;
-}
+p { padding: 6px 0; margin: 0; font-size: 15px; line-height: 1.8; }
+strong { font-weight: 700; color: #000; }
+em { font-style: italic; }
+a { color: #1a1a1a; text-decoration: none; font-weight: 700; border-bottom: 1px solid #1a1a1a; }
 
-h3 {
-  font-size: 17px;
-  font-weight: 600;
-  color: #000;
-  margin: 22px 0 8px;
-  line-height: 1.4;
-}
+blockquote { margin: 18px 0; padding: 10px 16px 10px 20px; background: #f7f7f7; border-left: 3px solid rgba(0,0,0,0.7); border-right: 1px solid rgba(0,0,0,0.15); color: #6a737d; font-size: 14px; line-height: 1.6; }
+blockquote p { margin: 4px 0; padding: 4px 0; color: #6a737d; font-size: 14px; }
 
-p {
-  margin: 12px 0;
-  color: #2b2b2b;
-  font-size: 16px;
-  line-height: 1.85;
-}
+ul, ol { margin: 10px 0; padding-left: 24px; }
+li { margin: 4px 0; font-size: 15px; line-height: 1.7; }
 
-strong {
-  font-weight: 700;
-  color: #000;
-}
+code { font-family: "Operator Mono", Consolas, Monaco, Menlo, monospace; background: rgba(0,0,0,0.05); padding: 2px 5px; margin: 0 2px; border-radius: 2px; font-size: 14px; color: #d14; }
+pre { margin: 16px 0; padding: 16px; background: #1a1a1a; border-radius: 4px; overflow-x: auto; }
+pre code { background: none; padding: 0; margin: 0; color: #d4d4d4; font-size: 14px; border-radius: 0; }
 
-em {
-  font-style: italic;
-  color: #555;
-}
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 15px; }
+th { background: #1a1a1a; font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid #1a1a1a; color: #fff; }
+td { padding: 8px 12px; border: 1px solid #ddd; color: #1a1a1a; }
 
-a {
-  color: #000;
-  text-decoration: underline;
-}
-
-blockquote {
-  margin: 16px 0;
-  padding: 10px 16px;
-  background: #f8f8f8;
-  border-left: 3px solid #000;
-  color: #555;
-  font-size: 15px;
-  line-height: 1.8;
-}
-
-blockquote p {
-  margin: 4px 0;
-  color: #555;
-  font-size: 15px;
-}
-
-ul, ol {
-  margin: 12px 0;
-  padding-left: 24px;
-}
-
-li {
-  margin: 5px 0;
-  color: #2b2b2b;
-  font-size: 16px;
-  line-height: 1.8;
-}
-
-code {
-  font-family: "SF Mono", "Fira Code", Menlo, Consolas, monospace;
-  background: #f0f0f0;
-  padding: 2px 5px;
-  border-radius: 2px;
-  font-size: 14px;
-  color: #333;
-}
-
-pre {
-  margin: 16px 0;
-  padding: 16px;
-  background: #1e1e1e;
-  border-radius: 4px;
-  overflow-x: auto;
-}
-
-pre code {
-  background: none;
-  padding: 0;
-  color: #d4d4d4;
-  font-size: 14px;
-  border-radius: 0;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 16px 0;
-  font-size: 15px;
-}
-
-th {
-  background: #f0f0f0;
-  font-weight: 700;
-  text-align: left;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  color: #000;
-}
-
-td {
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  color: #2b2b2b;
-}
-
-img {
-  max-width: 100%;
-  border-radius: 4px;
-  margin: 16px 0;
-  display: block;
-}
-
-hr {
-  border: none;
-  border-top: 2px solid #000;
-  margin: 28px 0;
-}
+img { max-width: 100%; border-radius: 4px; margin: 16px 0; display: block; }
+hr { border: none; border-top: 1px solid #1a1a1a; margin: 28px 24px; }

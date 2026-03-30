@@ -32,6 +32,19 @@ AVAILABLE_THEMES = {
     "red": "红绯",
 }
 
+# 可用代码高亮主题（独立于文档主题）
+# 参考 wechat.jeffjade.com 的代码风格列表，映射到 Pygments 样式
+AVAILABLE_CODE_THEMES: dict[str, dict] = {
+    "atom-one-dark":  {"label": "Atom One Dark",  "pygments": "one-dark",      "bg": "#282c34", "color": "#abb2bf"},
+    "atom-one-light": {"label": "Atom One Light", "pygments": "friendly",      "bg": "#fafafa", "color": "#383a42"},
+    "monokai":        {"label": "Monokai",        "pygments": "monokai",       "bg": "#272822", "color": "#f8f8f2"},
+    "github":         {"label": "GitHub",         "pygments": "default",       "bg": "#f8f8f8", "color": "#333333"},
+    "vs2015":         {"label": "VS 2015",        "pygments": "native",        "bg": "#1e1e1e", "color": "#dcdcdc"},
+    "xcode":          {"label": "Xcode",          "pygments": "xcode",         "bg": "#ffffff", "color": "#000000"},
+}
+
+DEFAULT_CODE_THEME = "atom-one-dark"
+
 
 def _load_theme_css(theme: str) -> str:
     """加载主题 CSS 文件"""
@@ -42,11 +55,17 @@ def _load_theme_css(theme: str) -> str:
         return f.read()
 
 
-def _highlight_code_blocks(html: str) -> str:
+def _highlight_code_blocks(html: str, code_theme: str = DEFAULT_CODE_THEME) -> str:
     """
     找到 <pre><code class="language-xxx"> 块，
     用 Pygments 重新渲染成带内联样式的高亮 HTML。
+
+    code_theme: 代码高亮主题 key（如 "atom-one-dark"）。
     """
+    theme_config = AVAILABLE_CODE_THEMES.get(code_theme, AVAILABLE_CODE_THEMES[DEFAULT_CODE_THEME])
+    pygments_style = theme_config["pygments"]
+    bg = theme_config["bg"]
+
     pattern = re.compile(
         r'<pre><code(?:\s+class="language-(\w+)")?>(.*?)</code></pre>',
         re.DOTALL,
@@ -74,13 +93,33 @@ def _highlight_code_blocks(html: str) -> str:
         # noclasses=True → 直接生成内联样式，不依赖 CSS class
         formatter = HtmlFormatter(
             noclasses=True,
-            style="monokai",
+            style=pygments_style,
             nowrap=False,
-            prestyles="padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 14px; line-height: 1.6;",
+            prestyles=(
+                f"background: {bg}; padding: 16px; border-radius: 6px; "
+                f"overflow-x: auto; font-size: 14px; line-height: 1.6;"
+            ),
         )
         return highlight(code, lexer, formatter)
 
     return pattern.sub(replacer, html)
+
+
+def _apply_theme_decorations(html: str, theme: str) -> str:
+    """
+    为特定主题注入装饰性 HTML 元素。
+    微信会剥离 CSS class 和伪元素，所以装饰效果必须内联到 HTML 中。
+    """
+    if theme == "minimal":
+        # 极简黑 h3：黑底白字标签需要居中（inline-block 无法自身居中，包一层 div）
+        html = re.sub(
+            r"<h3>(.*?)</h3>",
+            lambda m: (
+                f'<div style="text-align: center; margin: 32px 0 12px;"><h3 style="margin: 0;">{m.group(1)}</h3></div>'
+            ),
+            html,
+        )
+    return html
 
 
 def _extract_title_and_summary(md_text: str) -> tuple[str, str]:
@@ -104,9 +143,19 @@ def _extract_title_and_summary(md_text: str) -> tuple[str, str]:
     return title, summary
 
 
-def md_to_wechat_html(md_text: str, theme: str = "default") -> dict:
+def md_to_wechat_html(
+    md_text: str,
+    theme: str = "default",
+    code_theme: str = DEFAULT_CODE_THEME,
+    serif: bool = True,
+) -> dict:
     """
     将 Markdown 转换为微信公众号兼容的 HTML。
+
+    参数:
+        theme: 文档主题（排版、字体、颜色）
+        code_theme: 代码高亮主题（独立于文档主题）
+        serif: 是否使用衬线字体（默认开启）
 
     返回 {
         "html": str,      # 内联样式的完整 HTML
@@ -156,11 +205,23 @@ def md_to_wechat_html(md_text: str, theme: str = "default") -> dict:
     )
     html_body = md.convert(md_text)
 
-    # 3. 代码高亮（Pygments 内联样式）
-    html_body = _highlight_code_blocks(html_body)
+    # 3. 代码高亮（Pygments 内联样式，代码主题独立于文档主题）
+    html_body = _highlight_code_blocks(html_body, code_theme=code_theme)
 
-    # 4. 加载主题 CSS + 内联
+    # 3.5 主题装饰：用 HTML 注入伪元素无法实现的装饰效果
+    html_body = _apply_theme_decorations(html_body, theme)
+
+    # 4. 加载主题 CSS + 字体覆盖 + 内联
     theme_css = _load_theme_css(theme)
+
+    # 字体切换：主题默认衬线，关闭时切回无衬线
+    if not serif:
+        theme_css += """
+body, p, li, blockquote, td, th, h1, h2, h3 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif !important;
+}
+"""
+
     full_html = f"""<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><style>{theme_css}</style></head>

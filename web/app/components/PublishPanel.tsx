@@ -10,6 +10,7 @@ const { TextArea } = Input;
 
 interface Props {
   article: string;
+  platform?: string;
   onBack: () => void;
 }
 
@@ -18,11 +19,14 @@ interface ThemeOption {
   label: string;
 }
 
-export function PublishPanel({ article, onBack }: Props) {
+export function PublishPanel({ article, platform, onBack }: Props) {
   const { message } = App.useApp();
   const [configured, setConfigured] = useState<boolean | null>(null);
   const [themes, setThemes] = useState<ThemeOption[]>([]);
+  const [codeThemes, setCodeThemes] = useState<ThemeOption[]>([]);
   const [selectedTheme, setSelectedTheme] = useState("default");
+  const [selectedCodeTheme, setSelectedCodeTheme] = useState("atom-one-dark");
+  const [serif, setSerif] = useState(true);
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
   const [author, setAuthor] = useState("");
@@ -41,12 +45,17 @@ export function PublishPanel({ article, onBack }: Props) {
   const [coverPrompt, setCoverPrompt] = useState("");
   const [loadingPrompt, setLoadingPrompt] = useState(false);
 
+  // AI 推荐
+  const [recommendReason, setRecommendReason] = useState("");
+  const [loadingRecommend, setLoadingRecommend] = useState(false);
+
   useEffect(() => {
     fetch("http://localhost:8917/api/publish/wechat/status")
       .then((r) => r.json())
       .then((data) => {
         setConfigured(data.configured);
         setThemes(data.themes || []);
+        setCodeThemes(data.code_themes || []);
       })
       .catch(() => setConfigured(false));
 
@@ -67,28 +76,64 @@ export function PublishPanel({ article, onBack }: Props) {
           }
         }
       }
+
     }
-  }, [article]);
+  }, [article, platform]);
+
+  // AI 推荐主题（手动触发）
+  const handleRecommendTheme = async () => {
+    if (!article.trim()) return;
+    setLoadingRecommend(true);
+    setRecommendReason("");
+    try {
+      const fd = new FormData();
+      fd.append("article", article);
+      fd.append("platform", platform || "wechat");
+      const res = await fetch("http://localhost:8917/api/publish/wechat/recommend-theme", { method: "POST", body: fd });
+      const data = await res.json();
+      if (data.theme) setSelectedTheme(data.theme);
+      if (data.code_theme) setSelectedCodeTheme(data.code_theme);
+      if (data.serif !== undefined) setSerif(data.serif);
+      if (data.reason) setRecommendReason(data.reason);
+    } catch {
+      message.error("推荐失败");
+    } finally {
+      setLoadingRecommend(false);
+    }
+  };
 
   // 获取预览
-  const handlePreview = async () => {
-    setLoadingPreview(true);
+  const fetchPreview = async (th?: string, ct?: string, sf?: boolean) => {
     const formData = new FormData();
     formData.append("article", article);
-    formData.append("theme", selectedTheme);
+    formData.append("theme", th ?? selectedTheme);
+    formData.append("code_theme", ct ?? selectedCodeTheme);
+    formData.append("serif", String(sf ?? serif));
+    const res = await fetch("http://localhost:8917/api/publish/wechat/preview", {
+      method: "POST",
+      body: formData,
+    });
+    const data = await res.json();
+    return data.html || "";
+  };
+
+  const handlePreview = async () => {
+    setLoadingPreview(true);
     try {
-      const res = await fetch("http://localhost:8917/api/publish/wechat/preview", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      setPreviewHtml(data.html || "");
+      setPreviewHtml(await fetchPreview());
       setShowPreview(true);
     } catch {
       message.error("预览生成失败");
     } finally {
       setLoadingPreview(false);
     }
+  };
+
+  // 预览窗口内切换样式 → 实时刷新
+  const refreshPreview = async (th: string, ct: string, sf: boolean) => {
+    try {
+      setPreviewHtml(await fetchPreview(th, ct, sf));
+    } catch { /* ignore */ }
   };
 
   // 生成封面 prompt
@@ -125,6 +170,8 @@ export function PublishPanel({ article, onBack }: Props) {
     const formData = new FormData();
     formData.append("article", article);
     formData.append("theme", selectedTheme);
+    formData.append("code_theme", selectedCodeTheme);
+    formData.append("serif", String(serif));
     formData.append("title", title);
     formData.append("summary", summary);
     formData.append("author", author);
@@ -207,17 +254,51 @@ WECHAT_APP_SECRET=你的AppSecret`}
     );
   }
 
+  // 预览内切换主题
+  const handlePreviewThemeChange = (th: string) => {
+    setSelectedTheme(th);
+    refreshPreview(th, selectedCodeTheme, serif);
+  };
+  const handlePreviewCodeThemeChange = (ct: string) => {
+    setSelectedCodeTheme(ct);
+    refreshPreview(selectedTheme, ct, serif);
+  };
+  const handlePreviewSerifToggle = () => {
+    const next = !serif;
+    setSerif(next);
+    refreshPreview(selectedTheme, selectedCodeTheme, next);
+  };
+
+  const pillBtn = (key: string, active: boolean, label: string, onClick: () => void) => (
+    <button
+      key={key}
+      onClick={onClick}
+      style={{
+        padding: "3px 10px", borderRadius: 14,
+        border: `1px solid ${active ? t.amber : t.sand}`,
+        background: active ? t.amberSoft : "transparent",
+        cursor: "pointer", fontSize: 11,
+        fontWeight: active ? 600 : 400,
+        color: active ? t.amber : t.espresso,
+        transition: "all 0.15s ease",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {label}
+    </button>
+  );
+
   // 预览 Modal
   const previewModal = (
     <Modal
       open={showPreview}
       onCancel={() => setShowPreview(false)}
       footer={null}
-      width={previewMode === "mobile" ? 440 : 800}
+      width={previewMode === "mobile" ? 480 : 860}
       centered
       title={
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span>主题预览</span>
+          <span>预览</span>
           <div style={{ display: "flex", gap: 4 }}>
             <button
               onClick={() => setPreviewMode("mobile")}
@@ -245,8 +326,23 @@ WECHAT_APP_SECRET=你的AppSecret`}
         </div>
       }
     >
+      {/* 预览内样式切换栏 */}
+      <div style={{ marginBottom: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, color: t.bark, fontWeight: 600, width: 32 }}>主题</span>
+          {themes.map((th) => pillBtn(th.key, selectedTheme === th.key, th.label, () => handlePreviewThemeChange(th.key)))}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 11, color: t.bark, fontWeight: 600, width: 32 }}>代码</span>
+          {codeThemes.map((ct) => pillBtn(ct.key, selectedCodeTheme === ct.key, ct.label, () => handlePreviewCodeThemeChange(ct.key)))}
+          <span style={{ fontSize: 11, color: t.stone, margin: "0 4px" }}>|</span>
+          {pillBtn("serif", serif, "衬线", handlePreviewSerifToggle)}
+          {pillBtn("sans", !serif, "无衬线", handlePreviewSerifToggle)}
+        </div>
+      </div>
+
       <div style={{
-        maxHeight: "70vh", overflow: "auto",
+        maxHeight: "65vh", overflow: "auto",
         borderRadius: 10, border: `1px solid ${t.sand}`, background: "#fff",
         width: previewMode === "mobile" ? 375 : "100%",
         margin: "0 auto",
@@ -270,16 +366,32 @@ WECHAT_APP_SECRET=你的AppSecret`}
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
             {sectionLabel("文章主题风格")}
-            <Button
-              icon={<EyeOutlined />}
-              size="small"
-              loading={loadingPreview}
-              onClick={handlePreview}
-              style={{ borderRadius: 6, fontSize: 12, borderColor: t.sand, color: t.bark }}
-            >
-              预览
-            </Button>
+            <div style={{ display: "flex", gap: 6 }}>
+              <Button
+                size="small"
+                loading={loadingRecommend}
+                onClick={handleRecommendTheme}
+                disabled={!article.trim()}
+                style={{ borderRadius: 6, fontSize: 12, borderColor: t.sand, color: t.bark }}
+              >
+                AI 推荐
+              </Button>
+              <Button
+                icon={<EyeOutlined />}
+                size="small"
+                loading={loadingPreview}
+                onClick={handlePreview}
+                style={{ borderRadius: 6, fontSize: 12, borderColor: t.sand, color: t.bark }}
+              >
+                预览
+              </Button>
+            </div>
           </div>
+          {recommendReason && (
+            <div style={{ fontSize: 12, color: t.bark, marginBottom: 8, padding: "4px 8px", background: t.amberSoft, borderRadius: 6 }}>
+              AI 推荐：{recommendReason}
+            </div>
+          )}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {themes.map((th) => {
               const isActive = selectedTheme === th.key;
@@ -298,6 +410,57 @@ WECHAT_APP_SECRET=你的AppSecret`}
                   }}
                 >
                   {th.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 衬线字体开关 */}
+        <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          {sectionLabel("衬线字体")}
+          <button
+            onClick={() => setSerif(!serif)}
+            style={{
+              position: "relative",
+              width: 40, height: 22, borderRadius: 11,
+              border: "none", cursor: "pointer",
+              background: serif ? t.amber : t.sand,
+              transition: "background 0.2s ease",
+            }}
+          >
+            <span style={{
+              position: "absolute",
+              top: 3, left: serif ? 21 : 3,
+              width: 16, height: 16, borderRadius: "50%",
+              background: "#fff",
+              transition: "left 0.2s ease",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+            }} />
+          </button>
+        </div>
+
+        {/* 代码主题选择 */}
+        <div style={{ marginBottom: 16 }}>
+          {sectionLabel("代码高亮风格")}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {codeThemes.map((ct) => {
+              const isActive = selectedCodeTheme === ct.key;
+              return (
+                <button
+                  key={ct.key}
+                  onClick={() => setSelectedCodeTheme(ct.key)}
+                  style={{
+                    padding: "5px 12px", borderRadius: 20,
+                    border: `1.5px solid ${isActive ? t.amber : t.sand}`,
+                    background: isActive ? t.amberSoft : "transparent",
+                    cursor: "pointer", fontSize: 12,
+                    fontWeight: isActive ? 600 : 400,
+                    color: isActive ? t.amber : t.espresso,
+                    transition: "all 0.2s ease",
+                  }}
+                >
+                  {ct.label}
                 </button>
               );
             })}
