@@ -56,11 +56,12 @@ interface Props {
   runningTopicId: number | null; // 正在生成的主题 ID
   runningPlatform?: string; // 正在生成的平台
   onSettings?: () => void;
+  onDeleteArticle?: (articleId: number) => void;
 }
 
 export function TopicList({
   onNewTopic, onSelectArticle, onGenerateForPlatform, onViewRunning, refreshKey,
-  activeTopicId, activeArticleId, isRunning, runningTopicId, runningPlatform, onSettings,
+  activeTopicId, activeArticleId, isRunning, runningTopicId, runningPlatform, onSettings, onDeleteArticle,
 }: Props) {
   const [topics, setTopics] = useState<TopicItem[]>([]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -76,15 +77,20 @@ export function TopicList({
       .catch(() => {});
   }, [refreshKey]);
 
-  // activeTopicId 变化时自动展开对应主题
+  // activeTopicId 变化或 refreshKey 更新时，刷新展开主题的详情
   useEffect(() => {
-    if (activeTopicId && activeTopicId !== expandedId) {
-      setExpandedId(activeTopicId);
-      fetch(`http://localhost:8917/api/topics/${activeTopicId}`)
-        .then((r) => r.json())
-        .then(setTopicDetail)
-        .catch(() => {});
-    }
+    if (!activeTopicId) return;
+    // expandedId 的同步由下方 fetch 回调处理，避免 effect 内直接 setState 引发级联渲染
+    let cancelled = false;
+    fetch(`http://localhost:8917/api/topics/${activeTopicId}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        setExpandedId(activeTopicId);
+        setTopicDetail(data);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
   }, [activeTopicId, refreshKey]);
 
   const handleExpand = async (topicId: number) => {
@@ -114,6 +120,7 @@ export function TopicList({
       setTopicDetail({ ...topicDetail, articles: topicDetail.articles.filter((a) => a.id !== articleId) });
     }
     setTopics((prev) => prev.map((t) => t.id === topicId ? { ...t, article_count: t.article_count - 1 } : t));
+    onDeleteArticle?.(articleId);
   };
 
   const ALL_PLATFORMS: Platform[] = ["wechat", "xiaohongshu", "zhihu"];
@@ -206,7 +213,7 @@ export function TopicList({
                         {isGeneratingHere && <span style={{ color: theme.amber, marginLeft: 6 }}>生成中...</span>}
                       </div>
                     </div>
-                    {!isGeneratingHere && hoveredTopicId === t.id && (
+                    {!isGeneratingHere && (
                       <Popconfirm
                         title="删除主题"
                         description="将同时删除该主题下所有文章"
@@ -221,6 +228,7 @@ export function TopicList({
                           style={{
                             background: "none", border: "none", cursor: "pointer",
                             padding: 4, fontSize: 12,
+                            visibility: hoveredTopicId === t.id ? "visible" : "hidden",
                           }}
                         >
                           <DeleteOutlined style={{ color: theme.error }} />
@@ -270,27 +278,26 @@ export function TopicList({
                             {a.status === "published" && (
                               <span style={{ fontSize: 10, color: theme.success }}>已发布</span>
                             )}
-                            {hoveredArticleId === a.id && (
-                              <Popconfirm
-                                title="删除文章"
-                                description={`确定删除这篇${PLATFORM_LABELS[a.platform] || a.platform}文章吗？`}
-                                onConfirm={() => handleDeleteArticle(a.id, t.id)}
-                                onPopupClick={(e) => e.stopPropagation()}
-                                okText="删除"
-                                okButtonProps={{ danger: true }}
-                                cancelText="取消"
+                            <Popconfirm
+                              title="删除文章"
+                              description={`确定删除这篇${PLATFORM_LABELS[a.platform] || a.platform}文章吗？`}
+                              onConfirm={() => handleDeleteArticle(a.id, t.id)}
+                              onPopupClick={(e) => e.stopPropagation()}
+                              okText="删除"
+                              okButtonProps={{ danger: true }}
+                              cancelText="取消"
+                            >
+                              <button
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                  background: "none", border: "none", cursor: "pointer",
+                                  padding: 2, fontSize: 11, flexShrink: 0,
+                                  visibility: hoveredArticleId === a.id ? "visible" : "hidden",
+                                }}
                               >
-                                <button
-                                  onClick={(e) => e.stopPropagation()}
-                                  style={{
-                                    background: "none", border: "none", cursor: "pointer",
-                                    padding: 2, fontSize: 11, flexShrink: 0,
-                                  }}
-                                >
-                                  <DeleteOutlined style={{ color: theme.error }} />
-                                </button>
-                              </Popconfirm>
-                            )}
+                                <DeleteOutlined style={{ color: theme.error }} />
+                              </button>
+                            </Popconfirm>
                           </div>
                         );
                       })}

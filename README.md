@@ -15,6 +15,8 @@
 
 **AI 配图**
 - 多 Provider 支持：OpenAI 兼容（含 Seedream/豆包）、Google Gemini、OpenRouter、Replicate、通义万相、Unsplash 搜图
+- 网页截图模式：Playwright 自动截取官方网站页面作为插图，适合技术资讯类文章
+- 混合模式：Writer 根据内容自动选择截图（产品页面）或 AI 生图（概念性插图）
 - 统一配置：选 Provider → 填 API Key + Base URL + Model，类似 LLM 配置体验
 - 8 种风格预设：温暖、新鲜、极简、概念、复古、粗体、可爱、黑板，按平台自动推荐
 - 提示词占位模式：无需 API Key，直接生成绘图提示词，复制到 Gemini / ChatGPT 等免费平台生图后上传替换
@@ -46,7 +48,7 @@
 | Agent 框架 | LangGraph (Python) |
 | LLM | 兼容 OpenAI / Anthropic 规范的任意模型 |
 | 搜索 | Tavily Search API |
-| 配图 | AI 生图（OpenAI / Gemini / OpenRouter / Replicate / 通义万相）+ Unsplash 搜图 |
+| 配图 | AI 生图（OpenAI / Gemini / OpenRouter / Replicate / 通义万相）+ Unsplash 搜图 + Playwright 截图 |
 | RAG | Chroma (本地向量库) |
 | 数据库 | SQLite (文章管理 + 配置存储) |
 | HTML 转换 | markdown + Pygments + css-inline |
@@ -67,11 +69,12 @@ content-agent/
 │   ├── memory.py                # RAG 向量库读写（Chroma）
 │   ├── db.py                    # SQLite 数据库（主题 + 文章 + 设置）
 │   ├── nodes/
-│   │   ├── planner.py           # 拆解搜索关键词
+│   │   ├── pre_researcher.py     # 预搜索（初始素材 + 历史向量库检索）
+│   │   ├── planner.py           # 分析选题、规划框架、拆解关键词
 │   │   ├── researcher.py        # 搜索 + 检索历史素材 + 提炼
 │   │   ├── writer.py            # 按平台 Prompt 生成初稿
 │   │   ├── critic.py            # 质量评估 + 修改建议
-│   │   └── image_fetcher.py     # 配图调度（AI 生图 / Unsplash / 提示词占位）
+│   │   └── image_fetcher.py     # 配图调度（AI 生图 / Unsplash / 截图 / 提示词占位）
 │   ├── prompts/
 │   │   └── templates.py         # 内容方向预设 + 三平台 Prompt 模板
 │   ├── publish/
@@ -82,7 +85,8 @@ content-agent/
 │   └── tools/
 │       ├── search.py            # Tavily 搜索
 │       ├── unsplash.py          # Unsplash 图片搜索
-│       └── image_gen.py         # AI 生图（多 Provider 统一接口）
+│       ├── image_gen.py         # AI 生图（多 Provider 统一接口）
+│       └── screenshot.py        # Playwright 网页截图
 ├── api/
 │   └── server.py                # FastAPI（SSE 生成 + CRUD + 设置 + 图片上传）
 ├── web/                         # Next.js 前端
@@ -130,6 +134,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # 安装 Python 依赖
 uv sync
+
+# 安装 Playwright 浏览器（截图模式需要）
+python -m playwright install chromium
 
 # 安装前端依赖
 cd web && bun install && cd ..
@@ -189,6 +196,8 @@ LLM_MODEL=claude-sonnet-4-6
 | Provider | 说明 | 需要 |
 |---|---|---|
 | 仅生成提示词 | 免费，输出绘图提示词，手动去 Gemini 等平台生图后上传 | 无需额外配置 |
+| 网页截图 | Playwright 截取官方网站页面，适合技术资讯 | `playwright install chromium` |
+| 混合模式 | 截图 + AI 生图，Writer 根据内容自动选择 | 截图 + AI 生图的配置 |
 | Unsplash | 免费摄影图搜索 | `UNSPLASH_ACCESS_KEY` |
 | OpenAI 兼容 | gpt-image / DALL-E / Seedream/豆包 等 | `IMAGE_API_KEY` + `IMAGE_BASE_URL`（可选）+ `IMAGE_MODEL`（可选） |
 | Google Gemini | Gemini 原生生图 | `IMAGE_API_KEY`（Gemini API Key） |
@@ -232,15 +241,17 @@ uv run run.py
 用户输入主题 + 选择方向和平台
     │
     ▼
-[Planner]        拆解 2~4 个搜索关键词
+[PreResearcher]  预搜索（Tavily 初步搜索 + 向量库历史素材检索）
     │
     ▼
-[Researcher]     ① 向量库检索历史素材
-                 ② Tavily 搜索新素材
-                 ③ LLM 整理提炼
+[Planner]        分析选题、规划文章框架、拆解搜索关键词
+    │
+    ▼
+[Researcher]     Tavily 深度搜索 + LLM 整理提炼素材
     │
     ▼
 [Writer]         按方向角色 + 平台 Prompt 生成初稿
+                 插入 [IMAGE: prompt] 或 [SCREENSHOT: url, desc] 占位符
     │
     ▼
 [Critic]         打分（满分 10）
@@ -248,7 +259,7 @@ uv run run.py
                  < 7 → 回到 Researcher 重写（最多 2 次）
     │
     ▼
-[ImageFetcher]   AI 生图 / Unsplash 搜图 / 提示词占位
+[ImageFetcher]   AI 生图 / Unsplash 搜图 / Playwright 截图 / 提示词占位
     │
     ▼
 [SaveMemory]     素材存入向量库

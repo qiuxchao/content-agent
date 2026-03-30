@@ -309,6 +309,15 @@ export default function Home() {
             runningTopicId={runningTopicId}
             runningPlatform={runningPlatform}
             onSettings={() => setSettingsOpen(true)}
+            onDeleteArticle={(articleId) => {
+              if (currentArticleId === articleId) {
+                setArticle("");
+                setScore(0);
+                setCurrentArticleId(null);
+                setCurrentPlatform("");
+                setViewingHistory(false);
+              }
+            }}
           />
         ) : (
           <InputPanel

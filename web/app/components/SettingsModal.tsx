@@ -19,6 +19,8 @@ const LLM_PROVIDERS = [
 
 const IMAGE_PROVIDERS = [
   { value: "prompt", label: "仅生成提示词（免费，手动生图后上传）" },
+  { value: "screenshot", label: "网页截图（Playwright，截取官方页面）" },
+  { value: "mixed", label: "混合模式（截图 + AI 生图，自动选择）" },
   { value: "unsplash", label: "Unsplash 图片搜索（免费）" },
   { value: "openai", label: "OpenAI 兼容（含 Seedream/豆包 等）" },
   { value: "gemini", label: "Google Gemini" },
@@ -297,6 +299,12 @@ export function SettingsModal({ open, onClose }: Props) {
             />
           )}
 
+          {imageProvider === "screenshot" && (
+            <div style={{ fontSize: 12, color: theme.stone, marginTop: 4, lineHeight: 1.6 }}>
+              需要安装 Playwright：uv pip install playwright && python -m playwright install chromium
+            </div>
+          )}
+
           {imageProvider === "unsplash" && field("UNSPLASH_ACCESS_KEY",
             <Input.Password
               value={values.UNSPLASH_ACCESS_KEY || ""}
@@ -306,7 +314,7 @@ export function SettingsModal({ open, onClose }: Props) {
             />
           )}
 
-          {imageProvider !== "unsplash" && imageProvider !== "prompt" && (
+          {imageProvider !== "unsplash" && imageProvider !== "prompt" && imageProvider !== "screenshot" && (
             <>
               {field("IMAGE_API_KEY",
                 <Input.Password

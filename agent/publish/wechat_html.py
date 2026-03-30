@@ -205,6 +205,20 @@ def md_to_wechat_html(
     )
     html_body = md.convert(md_text)
 
+    # 2.5 图片 alt → 居中图注：将 <img alt="描述"> 包裹为 <figure> + <figcaption>
+    def _img_to_figure(m):
+        full_tag = m.group(0)
+        alt = m.group(1)
+        if alt:
+            return (
+                f'<figure style="text-align:center;margin:16px 0;">'
+                f'{full_tag}'
+                f'<figcaption style="font-size:13px;color:#999;margin-top:2px;">{alt}</figcaption>'
+                f'</figure>'
+            )
+        return full_tag
+    html_body = re.sub(r'<img\s[^>]*?alt="([^"]*)"[^>]*/?\s*>', _img_to_figure, html_body)
+
     # 3. 代码高亮（Pygments 内联样式，代码主题独立于文档主题）
     html_body = _highlight_code_blocks(html_body, code_theme=code_theme)
 

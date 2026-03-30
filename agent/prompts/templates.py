@@ -12,7 +12,8 @@ from agent.state import Platform
 #   {topic}     → 用户输入的主题
 #   {context}   → Researcher 整理好的素材摘要
 #   {direction} → 内容方向描述（预设或自定义）
-#   [IMAGE: 英文关键词] → ImageFetcher 自动替换
+#   [IMAGE: 英文关键词] → ImageFetcher 自动替换（AI 生图/Unsplash）
+#   [SCREENSHOT: url, 描述] → ImageFetcher 自动截图（Playwright）
 #
 # 标题公式：
 #   颠覆式 / 方案式 / 悬念式 / 数字式
@@ -102,14 +103,7 @@ PLATFORM_PROMPTS: dict[str, str] = {
 - 字数：1500~2500字
 - 语气：informative, opinionated, not dry — 有信息量、有态度、不枯燥
 - **加粗核心结论和关键数据**
-- 插图：在每个 ## 段落开始前，单独一行写 [IMAGE: 详细的英文绘图提示词]
-  提示词必须包含：① 具体的视觉隐喻（与本段内容强关联）② 色彩方案（含 hex 色值）③ 渲染风格
-  可以包含文字标注、品牌视觉元素（logo 轮廓、品牌色）、数据可视化。
-  ✗ [IMAGE: AI technology]（太抽象）
-  ✗ [IMAGE: performance comparison]（没有画面）
-  ✓ [IMAGE: A futuristic digital illustration showing a glowing Chinese dragon made of circuit board patterns and code streams, coiling around a large glowing "5.1" number. Blue and gold light emanating outward. Color palette: deep navy (#0A1628), electric blue (#1A73E8), gold (#FFD600). Style: flat vector with cinematic lighting, 16:9]
-  ✓ [IMAGE: Memory chip icons (RAM sticks, server modules) cracking and falling like dominos with red downward arrows. A large "6x" compression symbol with lightning bolts in the center. Color palette: alarm red (#E53935), deep blue (#1A73E8), cyan (#00BCD4). Style: flat vector with glassmorphism effects, 16:9]
-  ✓ [IMAGE: A horizontal benchmark bar chart showing GLM-5.1 at 94.6% and GPT-4o at 100%, with model names as labels. Neon purple (#6c3ce6) and blue (#3178C6) bars on dark background (#0a0a1a). Clean data visualization style, 16:9]
+{image_instructions}
 """ + WRITING_PRINCIPLES + """
 【素材】
 {context}
@@ -136,8 +130,7 @@ PLATFORM_PROMPTS: dict[str, str] = {
 - 字数：400~600字
 - emoji 适度（每2~3行一个），段落之间空一行
 - 结尾另起一行，6~8个 #标签
-- 插图：正文第一行单独写 [IMAGE: 详细的英文绘图提示词, vertical composition, vibrant colors]
-  提示词要包含具体视觉隐喻、色彩方案（hex 色值）、渲染风格，与正文内容强关联
+{image_instructions}
 """ + WRITING_PRINCIPLES + """
 【素材】
 {context}
@@ -166,13 +159,36 @@ PLATFORM_PROMPTS: dict[str, str] = {
 - 语气：理性克制，有独立见解，可以有锋芒但不情绪化
 - **加粗核心论点和关键数据**
 - 对比性信息用表格，引用关键数据用 > 引用格式
-- 插图：在合适段落前单独一行写 [IMAGE: 详细的英文绘图提示词]
-  提示词要包含具体视觉隐喻、色彩方案（hex 色值）、渲染风格，与正文内容强关联
+{image_instructions}
 """ + WRITING_PRINCIPLES + """
 【素材】
 {context}
 """,
 }
+
+
+# ── 插图模式说明（根据 IMAGE_PROVIDER 注入）──────────────
+IMAGE_INSTRUCTION = """- 插图：在每个 ## 段落开始前，单独一行写 [IMAGE: 详细的英文绘图提示词]
+  提示词必须包含：① 具体的视觉隐喻（与本段内容强关联）② 色彩方案（含 hex 色值）③ 渲染风格
+  可以包含文字标注、品牌视觉元素（logo 轮廓、品牌色）、数据可视化。
+  ✗ [IMAGE: AI technology]（太抽象）
+  ✗ [IMAGE: performance comparison]（没有画面）
+  ✓ [IMAGE: A futuristic digital illustration showing a glowing Chinese dragon made of circuit board patterns and code streams, coiling around a large glowing "5.1" number. Blue and gold light emanating outward. Color palette: deep navy (#0A1628), electric blue (#1A73E8), gold (#FFD600). Style: flat vector with cinematic lighting, 16:9]"""
+
+SCREENSHOT_INSTRUCTION = """- 插图：在每个 ## 段落开始前，单独一行写 [SCREENSHOT: 官方网址, 中文描述]
+  截图目标必须是与本段内容直接相关的**官方网站、产品页面、文档页面**。
+  优先级：① 官方主页 ② 官方文档/发布说明 ③ 产品演示页面
+  ✗ [SCREENSHOT: https://google.com, 搜索结果]（不是官方页面）
+  ✓ [SCREENSHOT: https://www.anthropic.com/claude, Claude 产品介绍页]
+  ✓ [SCREENSHOT: https://glm5.online/, GLM-5 性能基准测试页面]"""
+
+MIXED_INSTRUCTION = """- 插图方式一（截图）：在需要展示**产品界面、官方页面、实际效果**的段落前，单独一行写 [SCREENSHOT: 官方网址, 中文描述]
+  截图目标必须是与本段内容直接相关的官方网站、产品页面、文档页面。
+  ✓ [SCREENSHOT: https://www.anthropic.com/claude, Claude 产品介绍页]
+- 插图方式二（AI 生图）：在需要**概念性、装饰性、数据可视化**插图的段落前，单独一行写 [IMAGE: 详细的英文绘图提示词]
+  提示词必须包含具体的视觉隐喻、色彩方案（含 hex 色值）、渲染风格。
+  ✓ [IMAGE: A futuristic digital illustration showing neural network nodes connected by glowing pathways. Color palette: deep navy (#0A1628), electric blue (#1A73E8), gold (#FFD600). Style: flat vector with cinematic lighting, 16:9]
+- 根据内容特点灵活选择：有官方页面可截的用 SCREENSHOT，需要创意表达的用 IMAGE"""
 
 
 def get_direction_text(direction: str) -> str:
@@ -187,12 +203,27 @@ def get_direction_text(direction: str) -> str:
     return f"你是一位专业的内容创作者。你的写作方向是：{direction}"
 
 
-def build_prompt(platform: Platform, topic: str, context: str, direction: str = "", outline: str = "") -> str:
+def _get_image_instruction(image_mode: str) -> str:
+    """根据配图模式返回对应的插图说明"""
+    if image_mode == "screenshot":
+        return SCREENSHOT_INSTRUCTION
+    elif image_mode == "mixed":
+        return MIXED_INSTRUCTION
+    else:
+        return IMAGE_INSTRUCTION
+
+
+def build_prompt(platform: Platform, topic: str, context: str, direction: str = "", outline: str = "", image_mode: str = "image") -> str:
     """用实际内容替换模板中的占位符"""
     if not direction:
         direction = DEFAULT_DIRECTION
     direction_text = get_direction_text(direction)
     template = PLATFORM_PROMPTS[platform]
+
+    # 替换插图说明
+    image_instruction = _get_image_instruction(image_mode)
+    template = template.replace("{image_instructions}", image_instruction)
+
     result = (
         template
         .replace("{direction}", direction_text)

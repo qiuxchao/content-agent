@@ -298,8 +298,17 @@ export function ArticlePanel({ article, isRunning, currentNode, platform, onPubl
                   </div>
                 );
               }
-              // 普通图片
-              return <img src={src} alt={alt} style={{ maxWidth: "100%", borderRadius: 8 }} />;
+              // 普通图片 + alt 作为图注
+              return (
+                <figure style={{ margin: "16px 0", textAlign: "center" }}>
+                  <img src={src} alt={alt} style={{ maxWidth: "100%", borderRadius: 8 }} />
+                  {alt && (
+                    <figcaption style={{ fontSize: 13, color: "#999", marginTop: 2 }}>
+                      {alt}
+                    </figcaption>
+                  )}
+                </figure>
+              );
             },
           }}
         >
