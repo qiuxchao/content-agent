@@ -61,51 +61,55 @@
 
 ```
 content-agent/
-├── agent/                       # Agent 核心
-│   ├── config.py                # 统一配置读取（env > SQLite > 默认值）
-│   ├── graph.py                 # LangGraph 主图（节点 + 条件分支）
-│   ├── state.py                 # 共享状态定义（AgentState）
-│   ├── llm.py                   # LLM 工厂（支持 OpenAI / Anthropic 规范）
-│   ├── memory.py                # RAG 向量库读写（Chroma）
-│   ├── db.py                    # SQLite 数据库（主题 + 文章 + 设置）
+├── agent/                        # Agent 核心
+│   ├── config.py                 # 统一配置读取（env > SQLite > 默认值）
+│   ├── graph.py                  # LangGraph 主图（节点 + 条件分支）
+│   ├── state.py                  # 共享状态定义（AgentState）
+│   ├── llm.py                    # LLM 工厂（支持 OpenAI / Anthropic 规范）
+│   ├── memory.py                 # RAG 向量库读写（Chroma）
+│   ├── db.py                     # SQLite 数据库（主题 + 文章 + 设置）
 │   ├── nodes/
-│   │   ├── pre_researcher.py     # 预搜索（初始素材 + 历史向量库检索）
-│   │   ├── planner.py           # 分析选题、规划框架、拆解关键词
-│   │   ├── researcher.py        # 搜索 + 检索历史素材 + 提炼
-│   │   ├── writer.py            # 按平台 Prompt 生成初稿
-│   │   ├── critic.py            # 质量评估 + 修改建议
-│   │   └── image_fetcher.py     # 配图调度（AI 生图 / Unsplash / 截图 / 提示词占位）
+│   │   ├── pre_researcher.py     # 预搜索（Tavily 初步搜索 + 向量库历史检索）
+│   │   ├── planner.py            # 分析选题、规划框架、拆解关键词
+│   │   ├── researcher.py         # Tavily 深度搜索 + LLM 提炼素材
+│   │   ├── writer.py             # 按平台 Prompt 生成初稿（含占位符）
+│   │   ├── critic.py             # 质量评估 + 修改建议
+│   │   └── image_fetcher.py      # 配图调度（AI 生图 / Unsplash / 截图 / 提示词占位）
 │   ├── prompts/
-│   │   └── templates.py         # 内容方向预设 + 三平台 Prompt 模板
+│   │   └── templates.py          # 内容方向预设 + 三平台 Prompt 模板
 │   ├── publish/
-│   │   ├── wechat_html.py       # Markdown → 微信 HTML（内联样式）
-│   │   ├── wechat_api.py        # 微信公众号 API 客户端
-│   │   ├── cover_prompt.py      # AI 封面图提示词生成
-│   │   └── themes/              # 8 套微信文章主题 CSS
+│   │   ├── wechat_html.py        # Markdown → 微信 HTML（内联样式 + 图注）
+│   │   ├── wechat_api.py         # 微信公众号 API 客户端
+│   │   ├── cover_prompt.py       # AI 封面图提示词生成
+│   │   └── themes/               # 8 套微信文章主题 CSS
 │   └── tools/
-│       ├── search.py            # Tavily 搜索
-│       ├── unsplash.py          # Unsplash 图片搜索
-│       ├── image_gen.py         # AI 生图（多 Provider 统一接口）
-│       └── screenshot.py        # Playwright 网页截图
+│       ├── search.py             # Tavily 搜索
+│       ├── unsplash.py           # Unsplash 图片搜索
+│       ├── image_gen.py          # AI 生图（多 Provider 统一接口）
+│       └── screenshot.py         # Playwright 网页截图
 ├── api/
-│   └── server.py                # FastAPI（SSE 生成 + CRUD + 设置 + 图片上传）
-├── web/                         # Next.js 前端
+│   └── server.py                 # FastAPI（SSE 生成 + CRUD + 设置 + 图片上传）
+├── web/                          # Next.js 前端
 │   └── app/
-│       ├── page.tsx             # 主页面（三栏布局）
-│       ├── theme.ts             # 暖色调主题 token
+│       ├── page.tsx              # 主页面（三栏布局）
+│       ├── layout.tsx            # 根布局
+│       ├── theme.ts              # 暖色调主题 token
+│       ├── globals.css           # 全局样式
 │       └── components/
-│           ├── TopicList.tsx     # 主题历史列表
-│           ├── InputPanel.tsx    # 新建主题（方向 + 平台 + 配图风格）
-│           ├── ArticlePanel.tsx  # 文章渲染 + 提示词占位卡片 + 图片上传
-│           ├── StatusPanel.tsx   # Agent 运行状态
-│           ├── PublishPanel.tsx  # 微信发布（主题预览 + 封面 prompt）
-│           ├── SettingsModal.tsx # 可视化设置面板
-│           └── PlatformIcons.tsx # 微信/小红书/知乎 SVG 图标
-├── data/                        # 本地数据（git 忽略）
-│   ├── vectorstore/             # Chroma 向量库
-│   ├── images/                  # 上传的配图
-│   └── content-agent.db         # SQLite 数据库
-├── run.py                       # CLI 入口
+│           ├── TopicList.tsx      # 主题历史列表 + 文章管理
+│           ├── InputPanel.tsx     # 新建主题（方向 + 平台 + 配图风格）
+│           ├── ArticlePanel.tsx   # 文章渲染 + 图注 + 提示词占位卡片 + 图片上传
+│           ├── StatusPanel.tsx    # Agent 运行状态面板
+│           ├── PublishPanel.tsx   # 微信发布（主题预览 + 封面 prompt）
+│           ├── SettingsModal.tsx  # 可视化设置面板
+│           ├── AntdProvider.tsx   # Ant Design 主题配置
+│           └── PlatformIcons.tsx  # 微信/小红书/知乎 SVG 图标
+├── data/                         # 本地数据（git 忽略）
+│   ├── vectorstore/              # Chroma 向量库
+│   ├── images/                   # 配图（AI 生图 / 截图 / 上传）
+│   └── content-agent.db          # SQLite 数据库
+├── run.py                        # CLI 入口
+├── inspect_memory.py             # RAG 向量库调试工具
 ├── pyproject.toml
 └── .env.example
 ```

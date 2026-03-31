@@ -17,3 +17,5 @@ output_*
 
 # RAG 向量库（本地数据）
 data/
+
+.next
