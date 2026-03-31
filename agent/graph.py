@@ -45,6 +45,7 @@ def save_memory_node(state: AgentState) -> dict:
         topic=state["topic"],
         context=state["context"],
         platform=state["platform"],
+        topic_id=state.get("topic_id"),
     )
     return {
         "log": state.get("log", []) + ["💾 素材已存入向量库"],
@@ -141,7 +142,7 @@ _NEXT_NODE = {
 }
 
 
-def run_stream(topic: str, platform: Platform, direction: str = "tech", image_style: str | None = None):
+def run_stream(topic: str, platform: Platform, direction: str = "tech", image_style: str | None = None, topic_id: int | None = None):
     """
     流式入口，yield 每个节点的输出。
     每次 yield 一个 dict: { "node": str, "data": dict, "active": str }
@@ -150,6 +151,8 @@ def run_stream(topic: str, platform: Platform, direction: str = "tech", image_st
     init = {"topic": topic, "platform": platform, "direction": direction, **_initial_state()}
     if image_style:
         init["image_style"] = image_style
+    if topic_id is not None:
+        init["topic_id"] = topic_id
 
     retry_count = 0
     for event in graph.stream(

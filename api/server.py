@@ -22,7 +22,7 @@ from agent.prompts.templates import DIRECTION_PRESETS, DEFAULT_DIRECTION
 from agent.publish.wechat_api import check_configured as wechat_configured, publish_article
 from agent.publish.wechat_html import md_to_wechat_html, AVAILABLE_THEMES, AVAILABLE_CODE_THEMES
 from agent.publish.cover_prompt import generate_cover_prompt
-from agent import db
+from agent import db, memory
 from agent.tools.image_gen import STYLE_PRESETS, PLATFORM_STYLES
 
 app = FastAPI(title="Content Agent API")
@@ -73,7 +73,7 @@ async def generate(req: GenerateRequest):
 
     def event_stream():
         last_state = {}
-        for event in run_stream(req.topic, req.platform, req.direction, image_style=req.style):
+        for event in run_stream(req.topic, req.platform, req.direction, image_style=req.style, topic_id=topic_id):
             node = event["node"]
             data = event["data"]
             last_state.update(data)
@@ -147,7 +147,10 @@ async def get_topic(topic_id: int):
 
 @app.delete("/api/topics/{topic_id}")
 async def delete_topic(topic_id: int):
-    return {"deleted": db.delete_topic(topic_id)}
+    deleted = db.delete_topic(topic_id)
+    if deleted:
+        memory.delete_by_topic_id(topic_id)
+    return {"deleted": deleted}
 
 
 # ─── 文章 CRUD ──────────────────────────────────────────
@@ -173,7 +176,11 @@ async def update_article(article_id: int, req: ArticleUpdateRequest):
 
 @app.delete("/api/articles/{article_id}")
 async def delete_article(article_id: int):
-    return {"deleted": db.delete_article(article_id)}
+    article = db.get_article(article_id)
+    deleted = db.delete_article(article_id)
+    if deleted and article:
+        memory.delete_by_topic_id_and_platform(article["topic_id"], article["platform"])
+    return {"deleted": deleted}
 
 
 # ─── 方向预设 ───────────────────────────────────────────

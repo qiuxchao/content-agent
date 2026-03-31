@@ -32,3 +32,4 @@ class AgentState(TypedDict):
     critic_feedback: str         # Critic 修改建议
     retry_count: int             # 重写次数（最多 2 次）
     image_style: NotRequired[str]  # 图片风格预设（可选）
+    topic_id: NotRequired[int]     # 数据库 topic ID，用于关联向量库
