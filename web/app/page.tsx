@@ -8,6 +8,7 @@ import { PublishPanel } from "./components/PublishPanel";
 import { TopicList } from "./components/TopicList";
 import { SettingsModal } from "./components/SettingsModal";
 import { theme } from "./theme";
+import { API_BASE } from "./lib/constants";
 
 export type Platform = "wechat" | "xiaohongshu" | "zhihu";
 
@@ -96,7 +97,7 @@ export default function Home() {
       if (style) body.style = style;
 
       try {
-        const res = await fetch("http://localhost:8917/api/generate", {
+        const res = await fetch(`${API_BASE}/api/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body),
@@ -200,7 +201,7 @@ export default function Home() {
     genStateRef.current.article = newArticle;
     // 如果已保存到数据库，同步更新
     if (currentArticleId) {
-      fetch(`http://localhost:8917/api/articles/${currentArticleId}`, {
+      fetch(`${API_BASE}/api/articles/${currentArticleId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content_md: newArticle }),
@@ -248,7 +249,7 @@ export default function Home() {
 
   // 初始加载：检查是否有历史记录
   useEffect(() => {
-    fetch("http://localhost:8917/api/topics")
+    fetch(`${API_BASE}/api/topics`)
       .then((r) => r.json())
       .then((data) => {
         const has = Array.isArray(data) && data.length > 0;
@@ -264,7 +265,7 @@ export default function Home() {
   // refreshKey 变化时更新 hasTopics
   useEffect(() => {
     if (refreshKey === 0) return;
-    fetch("http://localhost:8917/api/topics")
+    fetch(`${API_BASE}/api/topics`)
       .then((r) => r.json())
       .then((data) => setHasTopics(Array.isArray(data) && data.length > 0))
       .catch(() => {});

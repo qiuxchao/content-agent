@@ -10,6 +10,9 @@ import os
 from agent.db import get_setting
 
 
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8917").rstrip("/")
+
+
 def get_config(key: str, default: str = "") -> str:
     """
     读取配置值。优先级：环境变量 > SQLite settings 表 > default。

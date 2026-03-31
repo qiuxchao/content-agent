@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { App, Modal, Input, Select, Button, Spin, Tooltip, Switch } from "antd";
 import { QuestionCircleOutlined } from "@ant-design/icons";
 import { theme } from "../theme";
+import { API_BASE } from "../lib/constants";
 
 interface Props {
   open: boolean;
@@ -133,7 +134,7 @@ export function SettingsModal({ open, onClose }: Props) {
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    fetch("http://localhost:8917/api/settings")
+    fetch(`${API_BASE}/api/settings`)
       .then((r) => r.json())
       .then((data) => setValues(data?.settings || {}))
       .catch(() => message.error("加载设置失败"))
@@ -147,7 +148,7 @@ export function SettingsModal({ open, onClose }: Props) {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch("http://localhost:8917/api/settings", {
+      const res = await fetch(`${API_BASE}/api/settings`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ settings: values }),

@@ -15,6 +15,8 @@ import os
 import time
 from dataclasses import dataclass
 
+from agent.config import API_BASE_URL
+
 
 @dataclass
 class ScreenshotResult:
@@ -82,7 +84,7 @@ def take_screenshot(
         print(f"  [Screenshot] 保存: {filename}")
         alt = description or target_url
         # 返回 API 可访问的 URL，与 upload-image 端点保持一致
-        api_url = f"http://localhost:8917/api/images/{basename}"
+        api_url = f"{API_BASE_URL}/api/images/{basename}"
         return ScreenshotResult(
             url=api_url,
             alt=alt,

@@ -16,7 +16,7 @@ from fastapi import UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from agent.graph import run_stream
 from agent.state import Platform
-from agent.config import get_config
+from agent.config import get_config, API_BASE_URL
 from agent.llm import reset_llm_cache
 from agent.prompts.templates import DIRECTION_PRESETS, DEFAULT_DIRECTION
 from agent.publish.wechat_api import check_configured as wechat_configured, publish_article
@@ -321,7 +321,7 @@ async def upload_image(file: UploadFile = File(...)):
     with open(filepath, "wb") as f:
         f.write(content)
 
-    return {"url": f"http://localhost:8917/api/images/{filename}"}
+    return {"url": f"{API_BASE_URL}/api/images/{filename}"}
 
 
 # ─── 配置管理 ───────────────────────────────────────────

@@ -6,6 +6,8 @@ import { UploadOutlined, CheckCircleOutlined, CopyOutlined, EyeOutlined, MobileO
 import { theme as t } from "../theme";
 import type { UploadFile } from "antd";
 
+import { API_BASE } from "../lib/constants";
+
 const { TextArea } = Input;
 
 interface Props {
@@ -50,7 +52,7 @@ export function PublishPanel({ article, platform, onBack }: Props) {
   const [loadingRecommend, setLoadingRecommend] = useState(false);
 
   useEffect(() => {
-    fetch("http://localhost:8917/api/publish/wechat/status")
+    fetch(`${API_BASE}/api/publish/wechat/status`)
       .then((r) => r.json())
       .then((data) => {
         setConfigured(data.configured);
@@ -89,7 +91,7 @@ export function PublishPanel({ article, platform, onBack }: Props) {
       const fd = new FormData();
       fd.append("article", article);
       fd.append("platform", platform || "wechat");
-      const res = await fetch("http://localhost:8917/api/publish/wechat/recommend-theme", { method: "POST", body: fd });
+      const res = await fetch(`${API_BASE}/api/publish/wechat/recommend-theme`, { method: "POST", body: fd });
       const data = await res.json();
       if (data.theme) setSelectedTheme(data.theme);
       if (data.code_theme) setSelectedCodeTheme(data.code_theme);
@@ -109,7 +111,7 @@ export function PublishPanel({ article, platform, onBack }: Props) {
     formData.append("theme", th ?? selectedTheme);
     formData.append("code_theme", ct ?? selectedCodeTheme);
     formData.append("serif", String(sf ?? serif));
-    const res = await fetch("http://localhost:8917/api/publish/wechat/preview", {
+    const res = await fetch(`${API_BASE}/api/publish/wechat/preview`, {
       method: "POST",
       body: formData,
     });
@@ -141,7 +143,7 @@ export function PublishPanel({ article, platform, onBack }: Props) {
     if (!title.trim()) return;
     setLoadingPrompt(true);
     try {
-      const res = await fetch("http://localhost:8917/api/publish/cover-prompt", {
+      const res = await fetch(`${API_BASE}/api/publish/cover-prompt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, summary, direction: "tech" }),
@@ -179,7 +181,7 @@ export function PublishPanel({ article, platform, onBack }: Props) {
       formData.append("cover", cover[0].originFileObj);
     }
     try {
-      const res = await fetch("http://localhost:8917/api/publish/wechat", {
+      const res = await fetch(`${API_BASE}/api/publish/wechat`, {
         method: "POST",
         body: formData,
       });

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button, Popconfirm } from "antd";
 import { PlusOutlined, DeleteOutlined, LoadingOutlined, SettingOutlined } from "@ant-design/icons";
 import { theme } from "../theme";
+import { API_BASE } from "../lib/constants";
 import type { Platform } from "../page";
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -71,7 +72,7 @@ export function TopicList({
 
   // 加载主题列表
   useEffect(() => {
-    fetch("http://localhost:8917/api/topics")
+    fetch(`${API_BASE}/api/topics`)
       .then((r) => r.json())
       .then(setTopics)
       .catch(() => {});
@@ -82,7 +83,7 @@ export function TopicList({
     if (!activeTopicId) return;
     // expandedId 的同步由下方 fetch 回调处理，避免 effect 内直接 setState 引发级联渲染
     let cancelled = false;
-    fetch(`http://localhost:8917/api/topics/${activeTopicId}`)
+    fetch(`${API_BASE}/api/topics/${activeTopicId}`)
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
@@ -100,13 +101,13 @@ export function TopicList({
       return;
     }
     setExpandedId(topicId);
-    const res = await fetch(`http://localhost:8917/api/topics/${topicId}`);
+    const res = await fetch(`${API_BASE}/api/topics/${topicId}`);
     const data = await res.json();
     setTopicDetail(data);
   };
 
   const handleDelete = async (topicId: number) => {
-    await fetch(`http://localhost:8917/api/topics/${topicId}`, { method: "DELETE" });
+    await fetch(`${API_BASE}/api/topics/${topicId}`, { method: "DELETE" });
     setTopics((prev) => prev.filter((t) => t.id !== topicId));
     if (expandedId === topicId) {
       setExpandedId(null);
@@ -115,7 +116,7 @@ export function TopicList({
   };
 
   const handleDeleteArticle = async (articleId: number, topicId: number) => {
-    await fetch(`http://localhost:8917/api/articles/${articleId}`, { method: "DELETE" });
+    await fetch(`${API_BASE}/api/articles/${articleId}`, { method: "DELETE" });
     if (topicDetail && topicDetail.id === topicId) {
       setTopicDetail({ ...topicDetail, articles: topicDetail.articles.filter((a) => a.id !== articleId) });
     }

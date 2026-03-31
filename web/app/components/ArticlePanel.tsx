@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
 import "highlight.js/styles/github.css";
 import { theme } from "../theme";
+import { API_BASE } from "../lib/constants";
 
 const NODE_LABELS: Record<string, string> = {
   pre_researcher: "正在预搜索",
@@ -54,7 +55,7 @@ export function ArticlePanel({ article, isRunning, currentNode, platform, onPubl
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("http://localhost:8917/api/upload-image", { method: "POST", body: form });
+      const res = await fetch(`${API_BASE}/api/upload-image`, { method: "POST", body: form });
       if (!res.ok) throw new Error("上传失败");
       const { url } = await res.json();
       // 替换占位符为真实图片
