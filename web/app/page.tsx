@@ -325,6 +325,7 @@ export default function Home() {
             onGenerate={(topic, platform, direction, style) => handleGenerate(topic, platform, direction, undefined, style)}
             onStop={handleStop}
             onBack={hasTopics ? () => setLeftPanel("topics") : undefined}
+            onSettings={() => setSettingsOpen(true)}
             isRunning={isRunning}
           />
         )}

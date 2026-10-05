@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, Input } from "antd";
+import { SettingOutlined } from "@ant-design/icons";
 import { theme } from "../theme";
 import { WechatIcon, XiaohongshuIcon, ZhihuIcon } from "./PlatformIcons";
 import type { Platform } from "../page";
@@ -69,10 +70,11 @@ interface Props {
   onGenerate: (topic: string, platform: Platform, direction: string, style?: string) => void;
   onStop: () => void;
   onBack?: () => void;
+  onSettings?: () => void;
   isRunning: boolean;
 }
 
-export function InputPanel({ onGenerate, onStop, onBack, isRunning }: Props) {
+export function InputPanel({ onGenerate, onStop, onBack, onSettings, isRunning }: Props) {
   const [topic, setTopic] = useState("");
   const [platform, setPlatform] = useState<Platform>("wechat");
   const [imageStyle, setImageStyle] = useState<string>("");
@@ -123,14 +125,26 @@ export function InputPanel({ onGenerate, onStop, onBack, isRunning }: Props) {
         <div style={{ fontSize: 16, fontWeight: 600, color: theme.ink }}>
           新建主题
         </div>
-        {onBack && (
-          <button
-            onClick={onBack}
-            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: theme.bark }}
-          >
-            ← 返回
-          </button>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 13, color: theme.bark }}
+            >
+              ← 返回
+            </button>
+          )}
+          {onSettings && (
+            <Button
+              icon={<SettingOutlined />}
+              onClick={onSettings}
+              size="small"
+              style={{ borderRadius: 8, color: theme.bark, borderColor: theme.sand }}
+            >
+              设置
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Scrollable form area */}
